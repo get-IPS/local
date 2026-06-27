@@ -1043,7 +1043,7 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
     <!-- HEADER -->
     <div class="header">
         <img src="https://i.ibb.co/Df8g5PYb/kj.png" alt="Kj TEAM">
-        <h1>KK TEAM FILE MANAGER</h1>
+        <h1>KJ TEAM</h1>
         <div>
             <span class="badge badge-safe">🔒 Secure Mode</span>
             <span class="badge badge-safe">🛡️ Malware Protection</span>
