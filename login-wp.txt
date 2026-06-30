@@ -2,7 +2,7 @@
 session_start();
 
 // Password Bcrypt (hash dari "password123", ubah sesuai kebutuhan)
-$hashed_password = '$2y$10$gPtjr.PZbo/9BLZp5Om6GO6SB4WJrSUXyRLJeoSS.khtAN/ZodUUu';
+$hashed_password = '$2y$10$gs2SQQsCx7pBmvaMyfGWwOllk1FstBzNqZh8ufflXOcve4U1.skwu';
 
 function login_shell()
 {
