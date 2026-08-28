@@ -1,0 +1,79 @@
+# ================================
+# wp-admin hardening (revised)
+# Safe for WordPress admin usage
+# ================================
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # 1?? Force HTTPS (secure login)
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # 2?? Allow only safe HTTP methods (GET, POST, HEAD, OPTIONS)
+  RewriteCond %{REQUEST_METHOD} !^(GET|POST|HEAD|OPTIONS)$ [NC]
+  RewriteRule .* - [F,L]
+
+  # 3?? Block double extensions (e.g. shell.php.jpg, image.php.phtml)
+  # Allow core admin files & AJAX
+  RewriteCond %{REQUEST_URI} !/(admin-ajax\.php|admin-post\.php|async-upload\.php|media-upload\.php)$ [NC]
+  RewriteCond %{REQUEST_URI} (\.php[.;]|\.phtml[.;]|\.phar[.;]|\.php\.) [NC]
+  RewriteRule .* - [F,L,NC]
+
+  # 4?? Block null bytes, semicolons, and encoded injections
+  RewriteCond %{REQUEST_URI} (%00|%3B|;|\.\.) [NC]
+  RewriteRule .* - [F,L]
+
+</IfModule>
+
+# 5?? Deny access to sensitive files
+<FilesMatch "(\.htaccess|wp-config\.php|error_log|readme\.html|license\.txt|\.env)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# 6?? Prevent execution of PHP uploads (but allow core admin PHP)
+# Applies only to files that shouldn't exist in wp-admin
+<IfModule mod_rewrite.c>
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^.*\.(php|phtml|phar)$ - [F,L]
+</IfModule>
+
+# 7?? Security headers
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header unset X-Powered-By
+</IfModule>
+
+# 8?? Disable directory listing
+Options -Indexes
+
+# 9?? Optional: Basic Auth (double protection)
+# Uncomment if you want extra password before wp-login
+# <IfModule mod_auth_basic.c>
+#   AuthType Basic
+#   AuthName "Restricted Admin"
+#   AuthUserFile /home/youruser/.htpasswd
+#   Require valid-user
+# </IfModule>
+
+# ?? Allow WordPress core AJAX, login & media operations
+<FilesMatch "^(admin-ajax\.php|admin-post\.php|async-upload\.php|media-upload\.php|index\.php|wp-login\.php)$">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+  </IfModule>
+</FilesMatch>
+
+# End of wp-admin hardened .htaccess
