@@ -1,1 +1,0 @@
-admin@arc.euc.ac.cy:x:1542:1546::/home/arceuc/:/usr/local/cpanel/bin/noshell:rw
